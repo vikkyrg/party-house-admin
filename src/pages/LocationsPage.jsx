@@ -140,8 +140,8 @@ export default function LocationsPage() {
       header: 'Image', 
       render: (row) => (
         <div className="h-10 w-10 rounded overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
-          {row.image?.url ? (
-            <img src={row.image.url} alt={row.name} className="h-full w-full object-cover" />
+          {(row.image?.url || typeof row.image === 'string') ? (
+            <img src={row.image?.url || row.image} alt={row.name} className="h-full w-full object-cover" />
           ) : (
             <span className="text-[10px] text-slate-400">No Img</span>
           )}

@@ -142,8 +142,8 @@ export default function BannersPage() {
       header: 'Image', 
       render: (row) => (
         <div className="h-12 w-24 rounded overflow-hidden bg-slate-100 flex items-center justify-center">
-          {row.image?.url ? (
-            <img src={row.image.url} alt={row.title} className="h-full w-full object-cover" />
+          {(row.image?.url || typeof row.image === 'string') ? (
+            <img src={row.image?.url || row.image} alt={row.title} className="h-full w-full object-cover" />
           ) : (
             <span className="text-xs text-slate-400">No Image</span>
           )}
