@@ -17,6 +17,17 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -25,8 +36,8 @@ apiClient.interceptors.response.use(
     if (
       error.response?.status === 401 && 
       !originalRequest._retry && 
-      !originalRequest.url.includes('/auth/refresh-token') &&
-      !originalRequest.url.includes('/auth/login')
+      !originalRequest.url?.includes('/auth/refresh-token') &&
+      !originalRequest.url?.includes('/auth/login')
     ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -38,11 +49,21 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await apiClient.post('/auth/refresh-token');
+        const storedRefreshToken = localStorage.getItem('refreshToken');
+        const { data } = await apiClient.post('/auth/refresh-token', { refreshToken: storedRefreshToken });
+        if (data?.data?.accessToken) {
+          localStorage.setItem('accessToken', data.data.accessToken);
+          if (data.data.refreshToken) {
+            localStorage.setItem('refreshToken', data.data.refreshToken);
+          }
+        }
         processQueue(null);
         return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('adminUser');
         if (!window.location.pathname.includes('/admin/login')) {
           window.location.href = '/admin/login';
         }
