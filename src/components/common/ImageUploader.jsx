@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { UploadCloud, X, Image as ImageIcon } from 'lucide-react';
 import { cn } from './Button';
+import { getImageUrl } from '../../utils/imageUtils';
 
 export default function ImageUploader({
   value,
@@ -14,7 +15,7 @@ export default function ImageUploader({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
-  const previewUrl = value instanceof File ? URL.createObjectURL(value) : value?.url || value;
+  const previewUrl = value instanceof File ? URL.createObjectURL(value) : getImageUrl(value);
 
   const handleDragOver = (e) => {
     e.preventDefault();

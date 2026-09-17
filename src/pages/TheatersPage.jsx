@@ -12,6 +12,7 @@ import Button from '../components/common/Button';
 import FormModal from '../components/common/FormModal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import MultipleImageUploader from '../components/common/MultipleImageUploader';
+import { getImageUrl } from '../utils/imageUtils';
 
 import { useTheaters } from '../hooks/useTheaters';
 import { useCities } from '../hooks/useCities';
@@ -164,7 +165,7 @@ export default function TheatersPage() {
       render: (row) => (
         <div className="h-10 w-10 rounded overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
           {row.images?.length > 0 ? (
-            <img src={row.images[0].url} alt={row.name} className="h-full w-full object-cover" />
+            <img src={getImageUrl(row.images[0])} alt={row.name} className="h-full w-full object-cover" />
           ) : (
             <span className="text-[10px] text-slate-400">No Img</span>
           )}

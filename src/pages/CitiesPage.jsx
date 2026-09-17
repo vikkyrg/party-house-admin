@@ -12,6 +12,7 @@ import Button from '../components/common/Button';
 import FormModal from '../components/common/FormModal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import ImageUploader from '../components/common/ImageUploader';
+import { getImageUrl } from '../utils/imageUtils';
 
 import { useCities } from '../hooks/useCities';
 import { citySchema } from '../validations/citySchema';
@@ -137,7 +138,7 @@ export default function CitiesPage() {
       render: (row) => (
         <div className="h-10 w-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
           {(row.image?.url || typeof row.image === 'string') ? (
-            <img src={row.image?.url || row.image} alt={row.name} className="h-full w-full object-cover" />
+            <img src={getImageUrl(row.image)} alt={row.name} className="h-full w-full object-cover" />
           ) : (
             <span className="text-[10px] text-slate-400">No Img</span>
           )}

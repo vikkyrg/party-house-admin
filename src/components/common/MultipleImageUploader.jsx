@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { UploadCloud, X, Image as ImageIcon } from 'lucide-react';
 import { cn } from './Button';
+import { getImageUrl } from '../../utils/imageUtils';
 
 export default function MultipleImageUploader({
   value = [],
@@ -14,7 +15,7 @@ export default function MultipleImageUploader({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
-  const getPreviewUrl = (val) => val instanceof File ? URL.createObjectURL(val) : val?.url || val;
+  const getPreviewUrl = (val) => val instanceof File ? URL.createObjectURL(val) : getImageUrl(val);
   const previewUrls = (value || []).map(getPreviewUrl);
 
   const handleDragOver = (e) => {
