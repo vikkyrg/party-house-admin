@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 
@@ -35,10 +35,14 @@ export default function AddOnsPage() {
   
   const [imageFile, setImageFile] = useState(null);
 
-  // Form setup
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm({
     resolver: zodResolver(addonSchema),
-    defaultValues: { isActive: true, price: 0, sortOrder: 0, category: 'Decoration' },
+    defaultValues: { isActive: true, price: 0, sortOrder: 0, category: 'Decoration', variants: [] },
+  });
+
+  const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({
+    control,
+    name: 'variants',
   });
 
   // Data fetching
@@ -87,7 +91,7 @@ export default function AddOnsPage() {
   const handleOpenAddModal = () => {
     setEditingAddOn(null);
     setImageFile(null);
-    reset({ name: '', description: '', price: 0, category: 'Decoration', isActive: true, sortOrder: 0 });
+    reset({ name: '', description: '', price: 0, category: 'Decoration', isActive: true, sortOrder: 0, variants: [] });
     setIsModalOpen(true);
   };
 
@@ -100,6 +104,7 @@ export default function AddOnsPage() {
     setValue('category', addon.category);
     setValue('isActive', addon.isActive);
     setValue('sortOrder', addon.sortOrder);
+    setValue('variants', addon.variants || []);
     setIsModalOpen(true);
   };
 
@@ -118,7 +123,19 @@ export default function AddOnsPage() {
     const data = new FormData();
     Object.keys(formData).forEach(key => {
       if (formData[key] !== undefined && formData[key] !== null) {
-        data.append(key, formData[key]);
+        if (Array.isArray(formData[key])) {
+          formData[key].forEach((item, index) => {
+            if (typeof item === 'object' && item !== null) {
+              Object.keys(item).forEach(subKey => {
+                data.append(`${key}[${index}][${subKey}]`, item[subKey]);
+              });
+            } else {
+              data.append(`${key}[]`, item);
+            }
+          });
+        } else {
+          data.append(key, formData[key]);
+        }
       }
     });
 
@@ -249,6 +266,8 @@ export default function AddOnsPage() {
               <option value="Experience">Experience</option>
               <option value="Gift">Gift</option>
               <option value="Entertainment">Entertainment</option>
+              <option value="Cake">Cake</option>
+              <option value="Special Service">Special Service</option>
             </select>
             {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>}
           </div>
@@ -261,6 +280,37 @@ export default function AddOnsPage() {
               className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.price ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
             />
             {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>}
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-700">Variants / Sizes (e.g., Cakes)</label>
+              <Button type="button" variant="outline" size="sm" onClick={() => appendVariant({ name: '1 Kg', price: 0 })}>
+                <Plus className="h-4 w-4 mr-1" /> Add Variant
+              </Button>
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto p-1">
+              {variantFields.map((field, index) => (
+                <div key={field.id} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    {...register(`variants.${index}.name`)}
+                    placeholder="e.g. Half Kg"
+                    className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-primary-600 sm:text-sm sm:leading-6 px-3"
+                  />
+                  <input
+                    type="number"
+                    {...register(`variants.${index}.price`, { valueAsNumber: true })}
+                    placeholder="Price (₹)"
+                    className="block w-32 rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-primary-600 sm:text-sm sm:leading-6 px-3"
+                  />
+                  <Button type="button" variant="ghost" size="icon" onClick={() => removeVariant(index)} className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {errors.variants && <p className="mt-1 text-sm text-red-600">{errors.variants.message || "Invalid variants"}</p>}
+            </div>
           </div>
           
           <div>

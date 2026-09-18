@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 
@@ -40,7 +40,12 @@ export default function TheatersPage() {
   // Form setup
   const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm({
     resolver: zodResolver(theaterSchema),
-    defaultValues: { isActive: true, city: '', location: '', eventTypes: [], features: [], rules: [] },
+    defaultValues: { isActive: true, city: '', location: '', eventTypes: [], features: [], rules: [], slots: [{ startTime: '10:00 AM', endTime: '01:00 PM' }] },
+  });
+
+  const { fields: slotFields, append: appendSlot, remove: removeSlot } = useFieldArray({
+    control,
+    name: 'slots',
   });
 
   const selectedCity = watch('city');
@@ -100,7 +105,7 @@ export default function TheatersPage() {
   const handleOpenAddModal = () => {
     setEditingTheater(null);
     setImageFiles([]);
-    reset({ name: '', description: '', address: '', capacity: 10, pricePerHour: 0, city: '', location: '', eventTypes: [], isActive: true });
+    reset({ name: '', description: '', address: '', capacity: 10, pricePerHour: 0, city: '', location: '', eventTypes: [], slots: [{ startTime: '10:00 AM', endTime: '01:00 PM' }], isActive: true });
     setIsModalOpen(true);
   };
 
@@ -118,6 +123,7 @@ export default function TheatersPage() {
       setValue('location', theater.location?._id || theater.location);
     }, 100);
     setValue('eventTypes', theater.eventTypes?.map(e => e._id || e) || []);
+    setValue('slots', theater.slots || []);
     setValue('isActive', theater.isActive);
     setIsModalOpen(true);
   };
@@ -138,7 +144,16 @@ export default function TheatersPage() {
     Object.keys(formData).forEach(key => {
       if (formData[key] !== undefined && formData[key] !== null) {
         if (Array.isArray(formData[key])) {
-          formData[key].forEach(item => data.append(`${key}[]`, item));
+          formData[key].forEach((item, index) => {
+            if (typeof item === 'object' && item !== null) {
+              // Serialize object arrays (like slots) for backend parsing
+              Object.keys(item).forEach(subKey => {
+                data.append(`${key}[${index}][${subKey}]`, item[subKey]);
+              });
+            } else {
+              data.append(`${key}[]`, item);
+            }
+          });
         } else {
           data.append(key, formData[key]);
         }
@@ -377,6 +392,38 @@ export default function TheatersPage() {
               )}
             />
             {errors.eventTypes && <p className="mt-1 text-sm text-red-600">{errors.eventTypes.message}</p>}
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-700">Time Slots</label>
+              <Button type="button" variant="outline" size="sm" onClick={() => appendSlot({ startTime: '10:00 AM', endTime: '01:00 PM' })}>
+                <Plus className="h-4 w-4 mr-1" /> Add Slot
+              </Button>
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto p-1">
+              {slotFields.map((field, index) => (
+                <div key={field.id} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    {...register(`slots.${index}.startTime`)}
+                    placeholder="e.g. 10:00 AM"
+                    className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-primary-600 sm:text-sm sm:leading-6 px-3"
+                  />
+                  <span className="text-slate-500">to</span>
+                  <input
+                    type="text"
+                    {...register(`slots.${index}.endTime`)}
+                    placeholder="e.g. 01:00 PM"
+                    className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-primary-600 sm:text-sm sm:leading-6 px-3"
+                  />
+                  <Button type="button" variant="ghost" size="icon" onClick={() => removeSlot(index)} className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {errors.slots && <p className="mt-1 text-sm text-red-600">{errors.slots.message || "Invalid slots"}</p>}
+            </div>
           </div>
 
           <div className="flex items-center gap-2 mt-4">

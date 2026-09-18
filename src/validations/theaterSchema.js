@@ -9,6 +9,10 @@ export const theaterSchema = z.object({
   capacity: z.number().min(1, 'Capacity must be at least 1').max(50),
   pricePerHour: z.number().min(0, 'Price must be positive'),
   eventTypes: z.array(z.string()).min(1, 'Select at least one event type'),
+  slots: z.array(z.object({
+    startTime: z.string(),
+    endTime: z.string(),
+  })).optional(),
   isActive: z.boolean().default(true),
   features: z.array(z.string()).optional(),
   rules: z.array(z.string()).optional(),
