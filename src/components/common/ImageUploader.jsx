@@ -42,8 +42,8 @@ export default function ImageUploader({
   };
 
   const handleFile = (file) => {
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file');
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      alert('Please upload an image or video file');
       return;
     }
     onChange(file);
@@ -57,6 +57,8 @@ export default function ImageUploader({
     if (onClear) onClear();
     else onChange(null);
   };
+
+  const isVideo = value instanceof File ? value.type.startsWith('video/') : (typeof value === 'string' && (value.includes('video') || value.match(/\.(mp4|webm)$/i)));
 
   return (
     <div className={className}>
@@ -83,18 +85,29 @@ export default function ImageUploader({
 
         {previewUrl ? (
           <div className="relative h-48 w-full group overflow-hidden rounded-md bg-slate-100">
-            <img 
-              src={previewUrl} 
-              alt="Preview" 
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
+            {isVideo ? (
+              <video 
+                src={previewUrl} 
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                muted 
+                loop 
+                autoPlay 
+                playsInline
+              />
+            ) : (
+              <img 
+                src={previewUrl} 
+                alt="Preview" 
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+            )}
             <div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity flex items-center justify-center group-hover:opacity-100">
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className="rounded-full bg-white p-2 text-slate-700 hover:bg-slate-100 shadow-sm"
-                  title="Change Image"
+                  title="Change File"
                 >
                   <ImageIcon className="h-4 w-4" />
                 </button>
@@ -102,7 +115,7 @@ export default function ImageUploader({
                   type="button"
                   onClick={handleRemove}
                   className="rounded-full bg-red-600 p-2 text-white hover:bg-red-700 shadow-sm"
-                  title="Remove Image"
+                  title="Remove File"
                 >
                   <X className="h-4 w-4" />
                 </button>

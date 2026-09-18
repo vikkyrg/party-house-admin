@@ -16,6 +16,7 @@ import CitiesPage from '../pages/CitiesPage';
 import LocationsPage from '../pages/LocationsPage';
 import EventTypesPage from '../pages/EventTypesPage';
 import AddOnsPage from '../pages/AddOnsPage';
+import CakesPage from '../pages/CakesPage';
 import BannersPage from '../pages/BannersPage';
 import TestimonialsPage from '../pages/TestimonialsPage';
 import FAQsPage from '../pages/FAQsPage';
@@ -137,6 +138,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission="manage:addOns">
             <AddOnsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'cakes',
+        element: (
+          <ProtectedRoute requiredPermission="manage:addOns">
+            <CakesPage />
           </ProtectedRoute>
         ),
       },

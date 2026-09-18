@@ -30,6 +30,7 @@ const navItems = [
   { name: 'Cities', path: '/admin/cities', icon: Map, permission: 'manage:cities' },
   { name: 'Locations', path: '/admin/locations', icon: MapPin, permission: 'manage:locations' },
   { name: 'Event Types', path: '/admin/event-types', icon: Tag, permission: 'manage:eventTypes' },
+  { name: 'Cakes', path: '/admin/cakes', icon: Tag, permission: 'manage:addOns' },
   { name: 'Add-ons', path: '/admin/addons', icon: PlusCircle, permission: 'manage:addOns' },
   { name: 'Services', path: '/admin/services', icon: Tag, permission: 'manage:services' },
   { name: 'Gallery', path: '/admin/gallery', icon: ImageIcon, permission: 'manage:gallery' },

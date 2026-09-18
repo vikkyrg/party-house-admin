@@ -211,7 +211,7 @@ export default function ReviewsPage() {
       <PageHeader 
         title="Reviews" 
         description="Manage customer reviews and media"
-        action={
+        actions={
           <Button onClick={handleOpenAddModal} className="gap-2">
             <Plus className="h-4 w-4" />
             Add Review
@@ -231,6 +231,12 @@ export default function ReviewsPage() {
           data={data?.data || []}
           isLoading={isLoading}
           keyExtractor={(item) => item._id}
+          emptyStateProps={{
+            title: 'No reviews found',
+            description: debouncedSearch ? 'Try adjusting your search query.' : 'Get started by adding a new customer review.',
+            actionLabel: debouncedSearch ? null : 'Add Review',
+            onAction: handleOpenAddModal
+          }}
         />
       </div>
 
@@ -307,9 +313,10 @@ export default function ReviewsPage() {
                   Upload Review {mediaType === 'image' ? 'Image' : 'Video'}
                 </label>
                 <ImageUploader 
-                  currentImage={typeof mediaFile === 'string' ? mediaFile : null}
-                  onImageSelected={setMediaFile}
-                  onImageRemoved={() => setMediaFile(null)}
+                  value={typeof mediaFile === 'string' ? mediaFile : mediaFile}
+                  onChange={setMediaFile}
+                  onClear={() => setMediaFile(null)}
+                  accept={mediaType === 'video' ? 'video/mp4, video/webm' : 'image/png, image/jpeg, image/webp'}
                 />
                 {mediaType === 'video' && <p className="text-xs text-slate-500 mt-2">Maximum file size: 10MB (MP4, WEBM)</p>}
               </div>

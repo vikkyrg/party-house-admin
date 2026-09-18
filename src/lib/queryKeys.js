@@ -31,6 +31,10 @@ export const queryKeys = {
     all: (filters) => ['addOns', filters],
     detail: (id) => ['addOns', id],
   },
+  cakes: {
+    all: (filters) => ['cakes', filters],
+    detail: (id) => ['cakes', id],
+  },
   banners: {
     all: (filters) => ['banners', filters],
     detail: (id) => ['banners', id],

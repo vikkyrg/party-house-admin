@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 
@@ -23,6 +23,7 @@ import { queryKeys } from '../lib/queryKeys';
 
 export default function AddOnsPage() {
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState('Extra Decoration');
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 500);
   
@@ -35,21 +36,17 @@ export default function AddOnsPage() {
   
   const [imageFile, setImageFile] = useState(null);
 
-  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(addonSchema),
-    defaultValues: { isActive: true, price: 0, sortOrder: 0, category: 'Decoration', variants: [] },
-  });
-
-  const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({
-    control,
-    name: 'variants',
+    defaultValues: { isActive: true, price: 0, sortOrder: 0, category: activeTab },
   });
 
   // Data fetching
   const { data, isLoading, error, refetch } = useAddOns({
     page,
-    limit: 10,
+    limit: 50,
     search: debouncedSearch,
+    category: activeTab
   });
 
   // Mutations
@@ -59,7 +56,7 @@ export default function AddOnsPage() {
     }),
     onSuccess: () => {
       toast.success('Add-on created successfully');
-      queryClient.invalidateQueries({ queryKey: queryKeys.addons.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.addOns.all() });
       handleCloseModal();
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || 'Failed to create add-on'),
@@ -71,7 +68,7 @@ export default function AddOnsPage() {
     }),
     onSuccess: () => {
       toast.success('Add-on updated successfully');
-      queryClient.invalidateQueries({ queryKey: queryKeys.addons.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.addOns.all() });
       handleCloseModal();
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || 'Failed to update add-on'),
@@ -81,7 +78,7 @@ export default function AddOnsPage() {
     mutationFn: (id) => apiClient.delete(`/addons/${id}`),
     onSuccess: () => {
       toast.success('Add-on deleted successfully');
-      queryClient.invalidateQueries({ queryKey: queryKeys.addons.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.addOns.all() });
       setDeleteConfirmOpen(false);
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || 'Failed to delete add-on'),
@@ -91,7 +88,7 @@ export default function AddOnsPage() {
   const handleOpenAddModal = () => {
     setEditingAddOn(null);
     setImageFile(null);
-    reset({ name: '', description: '', price: 0, category: 'Decoration', isActive: true, sortOrder: 0, variants: [] });
+    reset({ name: '', price: 0, category: activeTab, isActive: true, sortOrder: 1 });
     setIsModalOpen(true);
   };
 
@@ -99,12 +96,10 @@ export default function AddOnsPage() {
     setEditingAddOn(addon);
     setImageFile(addon.image?.url || null);
     setValue('name', addon.name);
-    setValue('description', addon.description || '');
     setValue('price', addon.price);
     setValue('category', addon.category);
     setValue('isActive', addon.isActive);
     setValue('sortOrder', addon.sortOrder);
-    setValue('variants', addon.variants || []);
     setIsModalOpen(true);
   };
 
@@ -124,14 +119,8 @@ export default function AddOnsPage() {
     Object.keys(formData).forEach(key => {
       if (formData[key] !== undefined && formData[key] !== null) {
         if (Array.isArray(formData[key])) {
-          formData[key].forEach((item, index) => {
-            if (typeof item === 'object' && item !== null) {
-              Object.keys(item).forEach(subKey => {
-                data.append(`${key}[${index}][${subKey}]`, item[subKey]);
-              });
-            } else {
-              data.append(`${key}[]`, item);
-            }
+          formData[key].forEach((item) => {
+            data.append(`${key}[]`, item);
           });
         } else {
           data.append(key, formData[key]);
@@ -165,9 +154,8 @@ export default function AddOnsPage() {
       )
     },
     { key: 'name', header: 'Add-on Name', sortable: true },
-    { key: 'category', header: 'Category' },
-    { key: 'price', header: 'Price (₹)', render: (row) => row.price },
-    { key: 'isActive', header: 'Status', render: (row) => <StatusBadge status={row.isActive} type="boolean" /> },
+    { key: 'sortOrder', header: 'Sort Order' },
+    { key: 'isActive', header: 'Published', render: (row) => <StatusBadge status={row.isActive} type="boolean" /> },
     {
       key: 'actions',
       header: 'Actions',
@@ -190,19 +178,38 @@ export default function AddOnsPage() {
   return (
     <div className="flex flex-col h-full">
       <PageHeader 
-        title="Services / Add-ons" 
-        description="Manage the services and add-ons like Fog Entry, Cakes, Decorations, etc." 
+        title="Add-ons" 
+        description="Manage the add-ons and services for bookings." 
         actions={
           <Button leftIcon={Plus} onClick={handleOpenAddModal}>
-            Add Service
+            Add {activeTab.replace('Extra ', '').replace('Choose ', '').replace(/s$/, '')}
           </Button>
         }
       />
 
+      {/* Tabs */}
+      <div className="border-b border-slate-200 mt-4 mb-4">
+        <nav className="-mb-px flex space-x-8">
+          {['Extra Decoration', 'Choose Gifts', 'Special Services'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => { setActiveTab(tab); setPage(1); }}
+              className={`${
+                activeTab === tab
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
+              } whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors`}
+            >
+              {tab}
+            </button>
+          ))}
+        </nav>
+      </div>
+
       <DataTableToolbar
         search={searchTerm}
         onSearchChange={setSearchTerm}
-        searchPlaceholder="Search services..."
+        searchPlaceholder={`Search ${activeTab.toLowerCase()}...`}
       />
 
       <div className="flex-1">
@@ -218,19 +225,18 @@ export default function AddOnsPage() {
           }}
           onPageChange={setPage}
           emptyStateProps={{
-            title: 'No services found',
-            description: debouncedSearch ? 'Try adjusting your search query.' : 'Get started by adding a new service.',
-            actionLabel: debouncedSearch ? null : 'Add Service',
+            title: `No ${activeTab.toLowerCase()} found`,
+            description: debouncedSearch ? 'Try adjusting your search query.' : `Get started by adding a new ${activeTab.toLowerCase()}.`,
+            actionLabel: debouncedSearch ? null : `Add ${activeTab.replace('Extra ', '').replace('Choose ', '').replace(/s$/, '')}`,
             onAction: handleOpenAddModal
           }}
         />
       </div>
 
-      {/* Create/Edit Modal */}
       <FormModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={editingAddOn ? 'Edit Service' : 'Add New Service'}
+        title={editingAddOn ? `Edit ${activeTab.replace('Extra ', '').replace('Choose ', '').replace(/s$/, '')}` : `Add New ${activeTab.replace('Extra ', '').replace('Choose ', '').replace(/s$/, '')}`}
         onSubmit={handleSubmit(onSubmit)}
         isLoading={isSubmitting}
       >
@@ -245,31 +251,14 @@ export default function AddOnsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
             <input
               type="text"
               {...register('name')}
               className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.name ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-              placeholder="e.g. Fog Entry"
+              placeholder="e.g. Rose Heart"
             />
             {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
-            <select
-              {...register('category')}
-              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.category ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-            >
-              <option value="Food">Food</option>
-              <option value="Decoration">Decoration</option>
-              <option value="Experience">Experience</option>
-              <option value="Gift">Gift</option>
-              <option value="Entertainment">Entertainment</option>
-              <option value="Cake">Cake</option>
-              <option value="Special Service">Special Service</option>
-            </select>
-            {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>}
           </div>
 
           <div>
@@ -283,42 +272,11 @@ export default function AddOnsPage() {
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-slate-700">Variants / Sizes (e.g., Cakes)</label>
-              <Button type="button" variant="outline" size="sm" onClick={() => appendVariant({ name: '1 Kg', price: 0 })}>
-                <Plus className="h-4 w-4 mr-1" /> Add Variant
-              </Button>
-            </div>
-            <div className="space-y-2 max-h-48 overflow-y-auto p-1">
-              {variantFields.map((field, index) => (
-                <div key={field.id} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    {...register(`variants.${index}.name`)}
-                    placeholder="e.g. Half Kg"
-                    className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-primary-600 sm:text-sm sm:leading-6 px-3"
-                  />
-                  <input
-                    type="number"
-                    {...register(`variants.${index}.price`, { valueAsNumber: true })}
-                    placeholder="Price (₹)"
-                    className="block w-32 rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-primary-600 sm:text-sm sm:leading-6 px-3"
-                  />
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeVariant(index)} className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              {errors.variants && <p className="mt-1 text-sm text-red-600">{errors.variants.message || "Invalid variants"}</p>}
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
-            <textarea
-              {...register('description')}
-              rows={3}
-              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.description ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+            <label className="block text-sm font-medium text-slate-700 mb-1">Sort Order</label>
+            <input
+              type="number"
+              {...register('sortOrder', { valueAsNumber: true })}
+              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.sortOrder ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
             />
           </div>
 
@@ -329,8 +287,8 @@ export default function AddOnsPage() {
               {...register('isActive')}
               className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-600"
             />
-            <label htmlFor="isActive" className="text-sm font-medium text-slate-700">
-              Active (Visible on website)
+              <label htmlFor="isActive" className="text-sm font-medium text-slate-700">
+              Visible on website
             </label>
           </div>
         </div>
