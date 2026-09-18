@@ -144,16 +144,13 @@ export default function TheatersPage() {
     Object.keys(formData).forEach(key => {
       if (formData[key] !== undefined && formData[key] !== null) {
         if (Array.isArray(formData[key])) {
-          formData[key].forEach((item, index) => {
-            if (typeof item === 'object' && item !== null) {
-              // Serialize object arrays (like slots) for backend parsing
-              Object.keys(item).forEach(subKey => {
-                data.append(`${key}[${index}][${subKey}]`, item[subKey]);
-              });
-            } else {
-              data.append(`${key}[]`, item);
-            }
-          });
+          if (formData[key].length > 0 && typeof formData[key][0] === 'object' && formData[key][0] !== null) {
+             data.append(key, JSON.stringify(formData[key]));
+          } else {
+            formData[key].forEach(item => {
+              data.append(key, item);
+            });
+          }
         } else {
           data.append(key, formData[key]);
         }
