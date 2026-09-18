@@ -33,7 +33,7 @@ const navItems = [
   { name: 'Add-ons', path: '/admin/addons', icon: PlusCircle, permission: 'manage:addOns' },
   { name: 'Services', path: '/admin/services', icon: Tag, permission: 'manage:services' },
   { name: 'Gallery', path: '/admin/gallery', icon: ImageIcon, permission: 'manage:gallery' },
-  { name: 'Stories', path: '/admin/stories', icon: MessageSquareQuote, permission: 'manage:stories' },
+  { name: 'Blogs', path: '/admin/stories', icon: MessageSquareQuote, permission: 'manage:stories' },
   { name: 'Banners', path: '/admin/banners', icon: ImageIcon, permission: 'manage:banners' },
   { name: 'Testimonials', path: '/admin/testimonials', icon: MessageSquareQuote, permission: 'manage:testimonials' },
   { name: 'FAQs', path: '/admin/faqs', icon: HelpCircle, permission: 'manage:faqs' },

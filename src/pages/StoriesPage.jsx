@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { Plus, Edit, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 
@@ -34,11 +34,17 @@ export default function StoriesPage() {
   const [storyToDelete, setStoryToDelete] = useState(null);
   
   const [imageFile, setImageFile] = useState(null);
+  const [sectionImages, setSectionImages] = useState({});
 
   // Form setup
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm({
     resolver: zodResolver(storySchema),
-    defaultValues: { isActive: true, author: 'Admin' },
+    defaultValues: { isActive: true, author: 'Admin', sections: [] },
+  });
+
+  const { fields, append, remove, move } = useFieldArray({
+    control,
+    name: 'sections',
   });
 
   // Data fetching
@@ -88,17 +94,31 @@ export default function StoriesPage() {
   const handleOpenAddModal = () => {
     setEditingStory(null);
     setImageFile(null);
-    reset({ title: '', content: '', author: 'Admin', isActive: true });
+    setSectionImages({});
+    reset({ title: '', shortDescription: '', content: '', author: 'Admin', isActive: true, sections: [] });
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (story) => {
     setEditingStory(story);
     setImageFile(story.image || null);
-    setValue('title', story.title);
-    setValue('content', story.content);
+    
+    const initialSectionImages = {};
+    const sections = story.sections || [];
+    sections.forEach((sec, idx) => {
+      if (sec.image) {
+        initialSectionImages[idx] = sec.image;
+      }
+    });
+    setSectionImages(initialSectionImages);
+
+    setValue('title', story.title || '');
+    setValue('shortDescription', story.shortDescription || '');
+    setValue('content', story.content || '');
     setValue('author', story.author || 'Admin');
-    setValue('isActive', story.isActive);
+    setValue('isActive', story.isActive !== undefined ? story.isActive : true);
+    setValue('sections', sections);
+    
     setIsModalOpen(true);
   };
 
@@ -106,6 +126,7 @@ export default function StoriesPage() {
     setIsModalOpen(false);
     reset();
     setImageFile(null);
+    setSectionImages({});
   };
 
   const confirmDelete = (story) => {
@@ -113,20 +134,76 @@ export default function StoriesPage() {
     setDeleteConfirmOpen(true);
   };
 
+  const handleSectionImageChange = (index, file) => {
+    setSectionImages(prev => ({ ...prev, [index]: file }));
+  };
+
+  const handleRemoveSection = (index) => {
+    remove(index);
+    setSectionImages(prev => {
+      const newImages = { ...prev };
+      // Shift indices down for images after the removed one
+      for (let i = index; i < fields.length; i++) {
+        if (newImages[i + 1] !== undefined) {
+          newImages[i] = newImages[i + 1];
+        } else {
+          delete newImages[i];
+        }
+      }
+      return newImages;
+    });
+  };
+
+  const handleMoveSection = (index, direction) => {
+    if (direction === 'up' && index > 0) {
+      move(index, index - 1);
+      setSectionImages(prev => {
+        const newImages = { ...prev };
+        const temp = newImages[index - 1];
+        newImages[index - 1] = newImages[index];
+        newImages[index] = temp;
+        return newImages;
+      });
+    } else if (direction === 'down' && index < fields.length - 1) {
+      move(index, index + 1);
+      setSectionImages(prev => {
+        const newImages = { ...prev };
+        const temp = newImages[index + 1];
+        newImages[index + 1] = newImages[index];
+        newImages[index] = temp;
+        return newImages;
+      });
+    }
+  };
+
   const onSubmit = (formData) => {
     const data = new FormData();
     Object.keys(formData).forEach(key => {
-      if (formData[key] !== undefined && formData[key] !== null) {
+      if (key !== 'sections' && formData[key] !== undefined && formData[key] !== null) {
         data.append(key, formData[key]);
       }
     });
 
+    const sectionsPayload = formData.sections ? formData.sections.map((sec, idx) => ({
+      title: sec.title,
+      description: sec.description,
+      image: typeof sectionImages[idx] === 'string' ? sectionImages[idx] : undefined
+    })) : [];
+
+    data.append('sections', JSON.stringify(sectionsPayload));
+
     if (imageFile instanceof File) {
       data.append('image', imageFile);
     } else if (!imageFile && !editingStory) {
-      toast.error('Image is required');
+      toast.error('Cover image is required');
       return;
     }
+
+    Object.entries(sectionImages).forEach(([idx, file]) => {
+      if (file instanceof File) {
+        data.append(`section_image_${idx}`, file);
+      }
+    });
 
     if (editingStory) {
       updateMutation.mutate({ id: editingStory._id, data });
@@ -211,72 +288,182 @@ export default function StoriesPage() {
         />
       </div>
 
-      {/* Create/Edit Modal */}
       <FormModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         title={editingStory ? 'Edit Story' : 'Create New Story'}
         onSubmit={handleSubmit(onSubmit)}
         isLoading={isSubmitting}
+        maxWidth="max-w-5xl"
       >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Cover Image</label>
-            <ImageUploader 
-              value={imageFile} 
-              onChange={setImageFile} 
-              aspectRatio="video"
-            />
+        <div className="space-y-8 pb-8">
+          
+          {/* Cover & General Info */}
+          <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Story Information</h3>
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Cover Image *</label>
+                <div className="max-w-2xl">
+                  <ImageUploader 
+                    value={imageFile} 
+                    onChange={setImageFile} 
+                    aspectRatio="video"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Title *</label>
+                  <input
+                    type="text"
+                    {...register('title')}
+                    className={`block w-full rounded-md border-0 py-2 text-slate-900 shadow-sm ring-1 ring-inset ${errors.title ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                    placeholder="e.g. Make Every Birthday A Movie Night"
+                  />
+                  {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Author *</label>
+                  <input
+                    type="text"
+                    {...register('author')}
+                    className={`block w-full rounded-md border-0 py-2 text-slate-900 shadow-sm ring-1 ring-inset ${errors.author ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                    placeholder="e.g. John Doe"
+                  />
+                  {errors.author && <p className="mt-1 text-sm text-red-600">{errors.author.message}</p>}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Short Description / Excerpt</label>
+                <textarea
+                  rows={2}
+                  {...register('shortDescription')}
+                  className={`block w-full rounded-md border-0 py-2 text-slate-900 shadow-sm ring-1 ring-inset ${errors.shortDescription ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                  placeholder="A brief summary for the public listing page..."
+                />
+                {errors.shortDescription && <p className="mt-1 text-sm text-red-600">{errors.shortDescription.message}</p>}
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  {...register('isActive')}
+                  className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-600"
+                />
+                <label htmlFor="isActive" className="text-sm font-medium text-slate-700">
+                  Published (Visible on website)
+                </label>
+              </div>
+            </div>
           </div>
 
+          {/* Sections Builder */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
-            <input
-              type="text"
-              {...register('title')}
-              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.title ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-              placeholder="e.g. 10 Best Birthday Themes"
-            />
-            {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-800">Story Sections</h3>
+              <Button type="button" size="sm" leftIcon={Plus} onClick={() => append({ title: '', description: '', image: null })}>
+                Add Section
+              </Button>
+            </div>
+            
+            {fields.length === 0 ? (
+              <div className="text-center py-10 bg-white border-2 border-dashed border-slate-200 rounded-xl">
+                <p className="text-slate-500 mb-4">No sections added yet. A story should have at least one section.</p>
+                <Button type="button" variant="outline" leftIcon={Plus} onClick={() => append({ title: '', description: '', image: null })}>
+                  Add First Section
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="relative bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    {/* Section Header Controls */}
+                    <div className="absolute top-4 right-4 flex items-center gap-1 bg-slate-50 rounded-lg p-1 border border-slate-100">
+                       <button type="button" onClick={() => handleMoveSection(index, 'up')} disabled={index === 0} className="p-1.5 text-slate-400 hover:text-slate-700 disabled:opacity-30 rounded hover:bg-slate-200 transition-colors">
+                         <ArrowUp className="w-4 h-4" />
+                       </button>
+                       <button type="button" onClick={() => handleMoveSection(index, 'down')} disabled={index === fields.length - 1} className="p-1.5 text-slate-400 hover:text-slate-700 disabled:opacity-30 rounded hover:bg-slate-200 transition-colors">
+                         <ArrowDown className="w-4 h-4" />
+                       </button>
+                       <div className="w-px h-4 bg-slate-300 mx-1"></div>
+                       <button type="button" onClick={() => handleRemoveSection(index)} className="p-1.5 text-red-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors">
+                         <Trash2 className="w-4 h-4" />
+                       </button>
+                    </div>
+
+                    <div className="flex items-center gap-3 mb-5">
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 font-bold text-sm">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                      <h4 className="font-semibold text-slate-700 tracking-wide">SECTION {String(index + 1).padStart(2, '0')}</h4>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                      <div className="lg:col-span-8 space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Section Title *</label>
+                          <input
+                            type="text"
+                            {...register(`sections.${index}.title`)}
+                            className="block w-full rounded-md border-0 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-primary-600 sm:text-sm sm:leading-6 px-3"
+                            placeholder="e.g. Choose Your Theatre"
+                          />
+                          {errors.sections?.[index]?.title && <p className="mt-1 text-sm text-red-600">{errors.sections[index].title.message}</p>}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Section Description *</label>
+                          <textarea
+                            rows={6}
+                            {...register(`sections.${index}.description`)}
+                            className="block w-full rounded-md border-0 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-primary-600 sm:text-sm sm:leading-6 px-3"
+                            placeholder="Detailed content for this section..."
+                          />
+                          {errors.sections?.[index]?.description && <p className="mt-1 text-sm text-red-600">{errors.sections[index].description.message}</p>}
+                        </div>
+                      </div>
+                      <div className="lg:col-span-4">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Section Image (Optional)</label>
+                        <ImageUploader 
+                          value={sectionImages[index]} 
+                          onChange={(file) => handleSectionImageChange(index, file)} 
+                          aspectRatio="video"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {fields.length > 0 && (
+              <div className="mt-6 flex justify-center">
+                <Button type="button" variant="outline" leftIcon={Plus} onClick={() => append({ title: '', description: '', image: null })}>
+                  Add Another Section
+                </Button>
+              </div>
+            )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Author</label>
-            <input
-              type="text"
-              {...register('author')}
-              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.author ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-              placeholder="e.g. John Doe"
-            />
-            {errors.author && <p className="mt-1 text-sm text-red-600">{errors.author.message}</p>}
-          </div>
+          {/* Legacy Content Support - Only show if it's an existing story with legacy content but no sections */}
+          {editingStory && editingStory.content && fields.length === 0 && (
+            <div className="bg-amber-50 p-6 rounded-xl border border-amber-200">
+              <h3 className="text-lg font-semibold text-amber-800 mb-2">Legacy Content (Deprecated)</h3>
+              <p className="text-sm text-amber-700 mb-4">This story uses the old format. Consider migrating this content into new dynamic sections above.</p>
+              <textarea
+                rows={4}
+                {...register('content')}
+                className="block w-full rounded-md border-0 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-amber-300 focus:ring-amber-500 sm:text-sm sm:leading-6 px-3 bg-amber-50/50"
+              />
+            </div>
+          )}
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Content</label>
-            <textarea
-              rows={8}
-              {...register('content')}
-              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.content ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-              placeholder="Write your story content here..."
-            />
-            {errors.content && <p className="mt-1 text-sm text-red-600">{errors.content.message}</p>}
-          </div>
-
-          <div className="flex items-center gap-2 mt-4">
-            <input
-              type="checkbox"
-              id="isActive"
-              {...register('isActive')}
-              className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-600"
-            />
-            <label htmlFor="isActive" className="text-sm font-medium text-slate-700">
-              Published (Visible on website)
-            </label>
-          </div>
         </div>
       </FormModal>
 
-      {/* Delete Confirmation */}
       <ConfirmDialog
         isOpen={deleteConfirmOpen}
         onClose={setDeleteConfirmOpen}
