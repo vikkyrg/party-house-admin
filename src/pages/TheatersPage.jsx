@@ -148,7 +148,7 @@ export default function TheatersPage() {
              data.append(key, JSON.stringify(formData[key]));
           } else {
             formData[key].forEach(item => {
-              data.append(key, item);
+              data.append(`${key}[]`, item);
             });
           }
         } else {
