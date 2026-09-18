@@ -43,7 +43,7 @@ export default function TheatersPage() {
     defaultValues: { isActive: true, city: '', location: '', eventTypes: [], features: [], rules: [], slots: [{ startTime: '10:00 AM', endTime: '01:00 PM' }] },
   });
 
-  const { fields: slotFields, append: appendSlot, remove: removeSlot } = useFieldArray({
+  const { fields: slotFields, append: appendSlot, remove: removeSlot, replace: replaceSlots } = useFieldArray({
     control,
     name: 'slots',
   });
@@ -105,7 +105,7 @@ export default function TheatersPage() {
   const handleOpenAddModal = () => {
     setEditingTheater(null);
     setImageFiles([]);
-    reset({ name: '', description: '', address: '', capacity: 10, pricePerHour: 0, city: '', location: '', eventTypes: [], slots: [{ startTime: '10:00 AM', endTime: '01:00 PM' }], isActive: true });
+    reset({ name: '', description: '', address: '', capacity: 10, pricePerHour: 0, additionalGuestPrice: 0, googleMapsLink: '', theatreVideoUrl: '', branchVideoUrl: '', city: '', location: '', eventTypes: [], slots: [{ startTime: '10:00 AM', endTime: '01:00 PM' }], isActive: true });
     setIsModalOpen(true);
   };
 
@@ -115,15 +115,19 @@ export default function TheatersPage() {
     setValue('name', theater.name);
     setValue('description', theater.description || '');
     setValue('address', theater.address || '');
+    setValue('googleMapsLink', theater.googleMapsLink || '');
+    setValue('theatreVideoUrl', theater.theatreVideoUrl || '');
+    setValue('branchVideoUrl', theater.branchVideoUrl || '');
     setValue('capacity', theater.capacity);
     setValue('pricePerHour', theater.pricePerHour);
+    setValue('additionalGuestPrice', theater.additionalGuestPrice || 0);
     setValue('city', theater.city?._id || theater.city);
     // Allow city to settle before setting location if needed, though react-hook-form does it sync.
     setTimeout(() => {
       setValue('location', theater.location?._id || theater.location);
     }, 100);
     setValue('eventTypes', theater.eventTypes?.map(e => e._id || e) || []);
-    setValue('slots', theater.slots || []);
+    replaceSlots(theater.slots?.length > 0 ? theater.slots.map(s => ({ startTime: s.startTime, endTime: s.endTime })) : []);
     setValue('isActive', theater.isActive);
     setIsModalOpen(true);
   };
@@ -143,7 +147,9 @@ export default function TheatersPage() {
     const data = new FormData();
     Object.keys(formData).forEach(key => {
       if (formData[key] !== undefined && formData[key] !== null) {
-        if (Array.isArray(formData[key])) {
+        if (key === 'slots') {
+          data.append(key, JSON.stringify(formData[key] || []));
+        } else if (Array.isArray(formData[key])) {
           if (formData[key].length > 0 && typeof formData[key][0] === 'object' && formData[key][0] !== null) {
              data.append(key, JSON.stringify(formData[key]));
           } else {
@@ -256,183 +262,250 @@ export default function TheatersPage() {
         onSubmit={handleSubmit(onSubmit)}
         isLoading={isSubmitting}
       >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Theater Images</label>
-            <MultipleImageUploader 
-              value={imageFiles} 
-              onChange={setImageFiles} 
-              aspectRatio="video"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Theater Name</label>
-            <input
-              type="text"
-              {...register('name')}
-              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.name ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-              placeholder="e.g. Grand Cinema Hall 1"
-            />
-            {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
-            <textarea
-              {...register('description')}
-              rows={3}
-              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.description ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-            />
-            {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-8 max-h-[70vh] overflow-y-auto pr-2 pb-6">
+          {/* GENERAL */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-slate-800 border-b border-slate-200 pb-2 uppercase tracking-wider">General Information</h3>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
-              <select
-                {...register('city')}
-                className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.city ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-              >
-                <option value="">Select city</option>
-                {cities.map(city => (
-                  <option key={city._id} value={city._id}>{city.name}</option>
-                ))}
-              </select>
-              {errors.city && <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
-              <select
-                {...register('location')}
-                className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.location ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-                disabled={!selectedCity}
-              >
-                <option value="">Select location</option>
-                {locations.map(loc => (
-                  <option key={loc._id} value={loc._id}>{loc.name}</option>
-                ))}
-              </select>
-              {errors.location && <p className="mt-1 text-sm text-red-600">{errors.location.message}</p>}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
-            <input
-              type="text"
-              {...register('address')}
-              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.address ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-            />
-            {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address.message}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Capacity</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Theater Name</label>
               <input
-                type="number"
-                {...register('capacity', { valueAsNumber: true })}
-                className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.capacity ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                type="text"
+                {...register('name')}
+                className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.name ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                placeholder="e.g. Grand Cinema Hall 1"
               />
-              {errors.capacity && <p className="mt-1 text-sm text-red-600">{errors.capacity.message}</p>}
+              {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Price Per Hour</label>
-              <input
-                type="number"
-                {...register('pricePerHour', { valueAsNumber: true })}
-                className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.pricePerHour ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+              <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+              <textarea
+                {...register('description')}
+                rows={3}
+                className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.description ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
               />
-              {errors.pricePerHour && <p className="mt-1 text-sm text-red-600">{errors.pricePerHour.message}</p>}
+              {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>}
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Event Types (Select multiple)</label>
-            <Controller
-              name="eventTypes"
-              control={control}
-              render={({ field }) => (
-                <div className="flex flex-wrap gap-2 p-3 border border-slate-300 rounded-md min-h-[80px]">
-                  {eventTypes.length === 0 ? (
-                    <p className="text-xs text-slate-400 m-auto">No event types available. Add some in Event Types page.</p>
-                  ) : (
-                    eventTypes.map(type => {
-                      const isSelected = (field.value || []).includes(type._id);
-                      return (
-                        <button
-                          key={type._id}
-                          type="button"
-                          onClick={() => {
-                            const current = field.value || [];
-                            if (isSelected) {
-                              field.onChange(current.filter(id => id !== type._id));
-                            } else {
-                              field.onChange([...current, type._id]);
-                            }
-                          }}
-                          className={`px-3 py-1 rounded-full text-sm border transition-colors ${
-                            isSelected
-                              ? 'bg-primary-600 border-primary-600 text-white'
-                              : 'bg-white border-slate-300 text-slate-700 hover:border-primary-400'
-                          }`}
-                        >
-                          {type.name}
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              )}
-            />
-            {errors.eventTypes && <p className="mt-1 text-sm text-red-600">{errors.eventTypes.message}</p>}
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-slate-700">Time Slots</label>
-              <Button type="button" variant="outline" size="sm" onClick={() => appendSlot({ startTime: '10:00 AM', endTime: '01:00 PM' })}>
-                <Plus className="h-4 w-4 mr-1" /> Add Slot
-              </Button>
+          {/* MEDIA */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-slate-800 border-b border-slate-200 pb-2 uppercase tracking-wider">Media</h3>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Gallery Images</label>
+              <MultipleImageUploader 
+                value={imageFiles} 
+                onChange={setImageFiles} 
+                aspectRatio="video"
+              />
             </div>
-            <div className="space-y-2 max-h-48 overflow-y-auto p-1">
-              {slotFields.map((field, index) => (
-                <div key={field.id} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    {...register(`slots.${index}.startTime`)}
-                    placeholder="e.g. 10:00 AM"
-                    className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-primary-600 sm:text-sm sm:leading-6 px-3"
-                  />
-                  <span className="text-slate-500">to</span>
-                  <input
-                    type="text"
-                    {...register(`slots.${index}.endTime`)}
-                    placeholder="e.g. 01:00 PM"
-                    className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-primary-600 sm:text-sm sm:leading-6 px-3"
-                  />
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeSlot(index)} className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              {errors.slots && <p className="mt-1 text-sm text-red-600">{errors.slots.message || "Invalid slots"}</p>}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Theatre Video URL</label>
+                <input
+                  type="url"
+                  {...register('theatreVideoUrl')}
+                  className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.theatreVideoUrl ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                  placeholder="e.g. https://youtube.com/..."
+                />
+                {errors.theatreVideoUrl && <p className="mt-1 text-sm text-red-600">{errors.theatreVideoUrl.message}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Branch Video URL</label>
+                <input
+                  type="url"
+                  {...register('branchVideoUrl')}
+                  className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.branchVideoUrl ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                  placeholder="e.g. https://youtube.com/..."
+                />
+                {errors.branchVideoUrl && <p className="mt-1 text-sm text-red-600">{errors.branchVideoUrl.message}</p>}
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 mt-4">
-            <input
-              type="checkbox"
-              id="isActive"
-              {...register('isActive')}
-              className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-600"
-            />
-            <label htmlFor="isActive" className="text-sm font-medium text-slate-700">
-              Active (Visible on website)
-            </label>
+          {/* LOCATION */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-slate-800 border-b border-slate-200 pb-2 uppercase tracking-wider">Location</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
+                <select
+                  {...register('city')}
+                  className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.city ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                >
+                  <option value="">Select city</option>
+                  {cities.map(city => (
+                    <option key={city._id} value={city._id}>{city.name}</option>
+                  ))}
+                </select>
+                {errors.city && <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                <select
+                  {...register('location')}
+                  className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.location ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                  disabled={!selectedCity}
+                >
+                  <option value="">Select location</option>
+                  {locations.map(loc => (
+                    <option key={loc._id} value={loc._id}>{loc.name}</option>
+                  ))}
+                </select>
+                {errors.location && <p className="mt-1 text-sm text-red-600">{errors.location.message}</p>}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Full Address</label>
+              <input
+                type="text"
+                {...register('address')}
+                className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.address ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+              />
+              {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address.message}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Google Maps Link</label>
+              <input
+                type="url"
+                {...register('googleMapsLink')}
+                className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.googleMapsLink ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                placeholder="e.g. https://maps.google.com/..."
+              />
+              {errors.googleMapsLink && <p className="mt-1 text-sm text-red-600">{errors.googleMapsLink.message}</p>}
+            </div>
+          </div>
+
+          {/* PRICING & CAPACITY */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-slate-800 border-b border-slate-200 pb-2 uppercase tracking-wider">Pricing & Capacity</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Capacity</label>
+                <input
+                  type="number"
+                  {...register('capacity', { valueAsNumber: true })}
+                  className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.capacity ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                />
+                {errors.capacity && <p className="mt-1 text-sm text-red-600">{errors.capacity.message}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Base Price / Hr</label>
+                <input
+                  type="number"
+                  {...register('pricePerHour', { valueAsNumber: true })}
+                  className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.pricePerHour ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                />
+                {errors.pricePerHour && <p className="mt-1 text-sm text-red-600">{errors.pricePerHour.message}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Additional Guest Price</label>
+                <input
+                  type="number"
+                  {...register('additionalGuestPrice', { valueAsNumber: true })}
+                  className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.additionalGuestPrice ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                />
+                {errors.additionalGuestPrice && <p className="mt-1 text-sm text-red-600">{errors.additionalGuestPrice.message}</p>}
+              </div>
+            </div>
+          </div>
+
+          {/* FEATURES */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-slate-800 border-b border-slate-200 pb-2 uppercase tracking-wider">Features</h3>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Event Types (Select multiple)</label>
+              <Controller
+                name="eventTypes"
+                control={control}
+                render={({ field }) => (
+                  <div className="flex flex-wrap gap-2 p-3 border border-slate-300 rounded-md min-h-[80px]">
+                    {eventTypes.length === 0 ? (
+                      <p className="text-xs text-slate-400 m-auto">No event types available. Add some in Event Types page.</p>
+                    ) : (
+                      eventTypes.map(type => {
+                        const isSelected = (field.value || []).includes(type._id);
+                        return (
+                          <button
+                            key={type._id}
+                            type="button"
+                            onClick={() => {
+                              const current = field.value || [];
+                              if (isSelected) {
+                                field.onChange(current.filter(id => id !== type._id));
+                              } else {
+                                field.onChange([...current, type._id]);
+                              }
+                            }}
+                            className={`px-3 py-1 rounded-full text-sm border transition-colors ${
+                              isSelected
+                                ? 'bg-primary-600 border-primary-600 text-white'
+                                : 'bg-white border-slate-300 text-slate-700 hover:border-primary-400'
+                            }`}
+                          >
+                            {type.name}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              />
+              {errors.eventTypes && <p className="mt-1 text-sm text-red-600">{errors.eventTypes.message}</p>}
+            </div>
+          </div>
+
+          {/* AVAILABILITY */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-slate-800 border-b border-slate-200 pb-2 uppercase tracking-wider">Availability</h3>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-slate-700">Time Slots</label>
+                <Button type="button" variant="outline" size="sm" onClick={() => appendSlot({ startTime: '10:00 AM', endTime: '01:00 PM' })}>
+                  <Plus className="h-4 w-4 mr-1" /> Add Slot
+                </Button>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto p-1">
+                {slotFields.length === 0 ? (
+                  <p className="text-sm text-slate-400 text-center py-3 border border-dashed border-slate-200 rounded-md">
+                    No time slots added. Click "+ Add Slot" to add one.
+                  </p>
+                ) : (
+                  slotFields.map((field, index) => (
+                    <div key={field.id} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        {...register(`slots.${index}.startTime`)}
+                        placeholder="e.g. 10:00 AM"
+                        className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-primary-600 sm:text-sm sm:leading-6 px-3"
+                      />
+                      <span className="text-slate-500">to</span>
+                      <input
+                        type="text"
+                        {...register(`slots.${index}.endTime`)}
+                        placeholder="e.g. 01:00 PM"
+                        className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-primary-600 sm:text-sm sm:leading-6 px-3"
+                      />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeSlot(index)} className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))
+                )}
+                {errors.slots && <p className="mt-1 text-sm text-red-600">{errors.slots.message || "Invalid slots"}</p>}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-100">
+              <input
+                type="checkbox"
+                id="isActive"
+                {...register('isActive')}
+                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-600"
+              />
+              <label htmlFor="isActive" className="text-sm font-medium text-slate-700">
+                Active (Visible on website)
+              </label>
+            </div>
           </div>
         </div>
       </FormModal>
