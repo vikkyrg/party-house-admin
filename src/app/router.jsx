@@ -27,6 +27,11 @@ import SettingsPage from '../pages/SettingsPage';
 import UnauthorizedPage from '../pages/UnauthorizedPage';
 import NotFoundPage from '../pages/NotFoundPage';
 
+// New Pages
+import ServicesPage from '../pages/ServicesPage';
+import GalleryPage from '../pages/GalleryPage';
+import StoriesPage from '../pages/StoriesPage';
+
 const ProtectedRoute = ({ children, requiredRole, requiredPermission }) => {
   const { isAuthenticated, user, isLoading } = useAuthStore();
 
@@ -132,6 +137,30 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission="manage:addOns">
             <AddOnsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'services',
+        element: (
+          <ProtectedRoute requiredPermission="manage:services">
+            <ServicesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'gallery',
+        element: (
+          <ProtectedRoute requiredPermission="manage:gallery">
+            <GalleryPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'stories',
+        element: (
+          <ProtectedRoute requiredPermission="manage:stories">
+            <StoriesPage />
           </ProtectedRoute>
         ),
       },

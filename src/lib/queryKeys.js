@@ -57,4 +57,16 @@ export const queryKeys = {
   reports: {
     revenue: (filters) => ['reports', 'revenue', filters],
   },
+  services: {
+    all: (filters) => ['services', filters],
+    detail: (id) => ['services', id],
+  },
+  stories: {
+    all: (filters) => ['stories', filters],
+    detail: (id) => ['stories', id],
+  },
+  gallery: {
+    all: (filters) => ['gallery', filters],
+    detail: (id) => ['gallery', id],
+  },
 };
