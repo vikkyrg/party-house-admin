@@ -9,6 +9,7 @@ import LoadingState from './LoadingState';
 import ErrorState from './ErrorState';
 import EmptyState from './EmptyState';
 import Pagination from './Pagination';
+import ActionButtons from './ActionButtons';
 
 export default function DataTable({
   columns,
@@ -47,18 +48,31 @@ export default function DataTable({
   }
 
   return (
-    <div className="rounded-md border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col h-full">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200">
+    <div className="box-border flex h-full w-full min-w-0 flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+      <div className="w-full min-w-0 overflow-x-auto">
+        <table className="w-full min-w-[720px] table-fixed divide-y divide-slate-200">
+          <colgroup>
+            {columns.map((col, idx) => {
+              const columnKey = col.key || idx;
+              const widthClass = columnKey === 'actions'
+                ? 'w-[140px]'
+                : columnKey === 'image'
+                  ? 'w-[90px]'
+                  : columnKey === 'isActive' || columnKey === 'status'
+                    ? 'w-[120px]'
+                    : '';
+              return <col key={columnKey} className={widthClass} />;
+            })}
+          </colgroup>
           <thead className="bg-slate-50">
             <tr>
               {columns.map((col, idx) => (
                 <th
                   key={col.key || idx}
                   scope="col"
-                  className={`px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider ${
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 ${
                     col.sortable ? 'cursor-pointer select-none hover:bg-slate-100' : ''
-                  } ${col.className || ''}`}
+                  } ${col.key === 'actions' ? 'actions-column text-right' : ''} ${col.className || ''}`}
                   onClick={() => col.sortable && onSort && onSort(col.key)}
                 >
                   <div className="flex items-center gap-1">
@@ -83,9 +97,11 @@ export default function DataTable({
                 {columns.map((col, colIndex) => (
                   <td
                     key={`${row.id || rowIndex}-${col.key || colIndex}`}
-                    className={`px-6 py-4 whitespace-nowrap text-sm text-slate-700 ${col.cellClassName || ''}`}
+                    className={`whitespace-nowrap px-6 py-4 align-middle text-sm text-slate-700 ${col.key === 'actions' ? 'actions-column text-right' : ''} ${col.cellClassName || ''}`}
                   >
-                    {col.render ? col.render(row) : row[col.key]}
+                    {col.key === 'actions' ? (
+                      <ActionButtons>{col.render ? col.render(row) : row[col.key]}</ActionButtons>
+                    ) : (col.render ? col.render(row) : row[col.key])}
                   </td>
                 ))}
               </tr>

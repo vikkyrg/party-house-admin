@@ -46,7 +46,7 @@ export default function StatusBadge({ status, type = 'default', className }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+        'inline-flex h-6 min-w-[72px] items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-medium',
         config.colors,
         className
       )}
