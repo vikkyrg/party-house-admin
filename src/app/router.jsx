@@ -12,7 +12,8 @@ import DashboardPage from '../pages/DashboardPage';
 import BookingsPage from '../pages/BookingsPage';
 import BookingDetailsPage from '../pages/BookingDetailsPage';
 import TheatersPage from '../pages/TheatersPage';
-import CitiesPage from '../pages/CitiesPage';
+import TheaterRoomsPage from '../pages/TheaterRoomsPage';
+import RoomSlotsPage from '../pages/RoomSlotsPage';
 import LocationsPage from '../pages/LocationsPage';
 import EventTypesPage from '../pages/EventTypesPage';
 import AddOnsPage from '../pages/AddOnsPage';
@@ -110,10 +111,18 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'cities',
+        path: 'theaters/:theaterId/rooms',
         element: (
-          <ProtectedRoute requiredPermission="manage:cities">
-            <CitiesPage />
+          <ProtectedRoute requiredPermission="manage:theaters">
+            <TheaterRoomsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'theaters/:theaterId/rooms/:roomId/slots',
+        element: (
+          <ProtectedRoute requiredPermission="manage:theaters">
+            <RoomSlotsPage />
           </ProtectedRoute>
         ),
       },

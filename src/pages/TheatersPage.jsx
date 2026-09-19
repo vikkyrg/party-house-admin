@@ -1,6 +1,7 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
+import { useState, useMemo } from 'react';
+import { Plus, Edit, Trash2, DoorOpen } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 
@@ -15,14 +16,24 @@ import MultipleImageUploader from '../components/common/MultipleImageUploader';
 import { getImageUrl } from '../utils/imageUtils';
 
 import { useTheaters } from '../hooks/useTheaters';
-import { useCities } from '../hooks/useCities';
 import { useLocations } from '../hooks/useLocations';
-import { useEventTypes } from '../hooks/useEventTypes';
 import { theaterSchema } from '../validations/theaterSchema';
 import { useDebounce } from '../hooks/useDebounce';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../lib/apiClient';
 import { queryKeys } from '../lib/queryKeys';
+
+const blankRoom = () => ({
+  _id: null,
+  name: '',
+  description: '',
+  capacity: 1,
+  basePrice: 0,
+  additionalGuestPrice: 0,
+  slots: [{ startTime: '10:00 AM', endTime: '01:00 PM', isActive: true }],
+  image: null,
+  isActive: true,
+});
 
 export default function TheatersPage() {
   const queryClient = useQueryClient();
@@ -36,19 +47,13 @@ export default function TheatersPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [theaterToDelete, setTheaterToDelete] = useState(null);
   const [imageFiles, setImageFiles] = useState([]);
+  const [roomDrafts, setRoomDrafts] = useState([]);
 
   // Form setup
-  const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(theaterSchema),
-    defaultValues: { isActive: true, city: '', location: '', eventTypes: [], features: [], rules: [], slots: [{ startTime: '10:00 AM', endTime: '01:00 PM' }] },
+    defaultValues: { isActive: true, location: '' },
   });
-
-  const { fields: slotFields, append: appendSlot, remove: removeSlot, replace: replaceSlots } = useFieldArray({
-    control,
-    name: 'slots',
-  });
-
-  const selectedCity = watch('city');
 
   // Data fetching
   const { data, isLoading, error, refetch } = useTheaters({
@@ -57,21 +62,16 @@ export default function TheatersPage() {
     search: debouncedSearch,
   });
 
-  const { data: citiesData } = useCities({ limit: 100 });
-  const cities = citiesData?.data?.cities || citiesData?.data || [];
-
-  const { data: locationsData } = useLocations({ city: selectedCity, limit: 100 });
+  const { data: locationsData } = useLocations({ limit: 100 });
   const locations = locationsData?.data?.locations || locationsData?.data || [];
-
-  const { data: eventTypesData } = useEventTypes({ limit: 100 });
-  const eventTypes = eventTypesData?.data?.eventTypes || eventTypesData?.data || [];
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (formData) => apiClient.post('/theaters', formData, {
+    mutationFn: ({ formData, rooms }) => apiClient.post('/theaters', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
-    }),
-    onSuccess: () => {
+    }).then((response) => ({ response, rooms })),
+    onSuccess: async ({ response, rooms }) => {
+      await saveRooms(response.data.data._id, rooms);
       toast.success('Theater created successfully');
       queryClient.invalidateQueries({ queryKey: queryKeys.theaters.all() });
       handleCloseModal();
@@ -80,10 +80,11 @@ export default function TheatersPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => apiClient.put(`/theaters/${id}`, data, {
+    mutationFn: ({ id, data, rooms }) => apiClient.put(`/theaters/${id}`, data, {
       headers: { 'Content-Type': 'multipart/form-data' }
-    }),
-    onSuccess: () => {
+    }).then((response) => ({ response, rooms })),
+    onSuccess: async ({ response, rooms }) => {
+      await saveRooms(response.data.data._id, rooms);
       toast.success('Theater updated successfully');
       queryClient.invalidateQueries({ queryKey: queryKeys.theaters.all() });
       handleCloseModal();
@@ -105,29 +106,26 @@ export default function TheatersPage() {
   const handleOpenAddModal = () => {
     setEditingTheater(null);
     setImageFiles([]);
-    reset({ name: '', description: '', address: '', capacity: 10, pricePerHour: 0, additionalGuestPrice: 0, googleMapsLink: '', theatreVideoUrl: '', branchVideoUrl: '', city: '', location: '', eventTypes: [], slots: [{ startTime: '10:00 AM', endTime: '01:00 PM' }], isActive: true });
+    setRoomDrafts([]);
+    reset({ name: '', description: '', address: '', googleMapsLink: '', location: '', isActive: true });
     setIsModalOpen(true);
   };
 
-  const handleOpenEditModal = (theater) => {
+  const handleOpenEditModal = async (theater) => {
     setEditingTheater(theater);
     setImageFiles(theater.images || []);
+    try {
+      const roomsResponse = await apiClient.get(`/theaters/${theater._id}/rooms?includeInactive=true`);
+      setRoomDrafts((roomsResponse.data.data || []).map((room) => ({ ...blankRoom(), ...room, slots: room.slots || [] })));
+    } catch (error) {
+      toast.error('Failed to load theater rooms');
+      setRoomDrafts([]);
+    }
     setValue('name', theater.name);
     setValue('description', theater.description || '');
     setValue('address', theater.address || '');
     setValue('googleMapsLink', theater.googleMapsLink || '');
-    setValue('theatreVideoUrl', theater.theatreVideoUrl || '');
-    setValue('branchVideoUrl', theater.branchVideoUrl || '');
-    setValue('capacity', theater.capacity);
-    setValue('pricePerHour', theater.pricePerHour);
-    setValue('additionalGuestPrice', theater.additionalGuestPrice || 0);
-    setValue('city', theater.city?._id || theater.city);
-    // Allow city to settle before setting location if needed, though react-hook-form does it sync.
-    setTimeout(() => {
-      setValue('location', theater.location?._id || theater.location);
-    }, 100);
-    setValue('eventTypes', theater.eventTypes?.map(e => e._id || e) || []);
-    replaceSlots(theater.slots?.length > 0 ? theater.slots.map(s => ({ startTime: s.startTime, endTime: s.endTime })) : []);
+    setValue('location', theater.location?._id || theater.location);
     setValue('isActive', theater.isActive);
     setIsModalOpen(true);
   };
@@ -136,11 +134,27 @@ export default function TheatersPage() {
     setIsModalOpen(false);
     reset();
     setImageFiles([]);
+    setRoomDrafts([]);
   };
 
   const confirmDelete = (theater) => {
     setTheaterToDelete(theater);
     setDeleteConfirmOpen(true);
+  };
+
+  const saveRooms = async (theaterId, rooms) => {
+    for (const room of rooms) {
+      if (!room.name?.trim()) continue;
+      const roomData = new FormData();
+      ['name', 'description', 'capacity', 'basePrice', 'additionalGuestPrice', 'isActive'].forEach((field) => roomData.append(field, room[field] ?? ''));
+      roomData.append('slots', JSON.stringify(room.slots || []));
+      if (room.image instanceof File) roomData.append('images', room.image);
+      if (room._id) {
+        await apiClient.put(`/rooms/${room._id}`, roomData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      } else {
+        await apiClient.post(`/theaters/${theaterId}/rooms`, roomData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      }
+    }
   };
 
   const onSubmit = (formData) => {
@@ -170,9 +184,9 @@ export default function TheatersPage() {
     });
 
     if (editingTheater) {
-      updateMutation.mutate({ id: editingTheater._id, data });
+      updateMutation.mutate({ id: editingTheater._id, data, rooms: roomDrafts });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate({ formData: data, rooms: roomDrafts });
     }
   };
 
@@ -191,10 +205,8 @@ export default function TheatersPage() {
       )
     },
     { key: 'name', header: 'Name', sortable: true },
-    { key: 'city', header: 'City', render: (row) => row.city?.name || 'N/A' },
     { key: 'location', header: 'Location', render: (row) => row.location?.name || 'N/A' },
-    { key: 'capacity', header: 'Capacity' },
-    { key: 'pricePerHour', header: 'Price/Hr', render: (row) => `₹${row.pricePerHour}` },
+    { key: 'rooms', header: 'Rooms', render: (row) => `${row.rooms?.filter((room) => room.isActive !== false).length || 0} Rooms` },
     { key: 'isActive', header: 'Status', render: (row) => <StatusBadge status={row.isActive} type="boolean" /> },
     {
       key: 'actions',
@@ -205,6 +217,11 @@ export default function TheatersPage() {
           <Button variant="ghost" size="icon" onClick={() => handleOpenEditModal(row)} title="Edit">
             <Edit className="h-4 w-4 text-slate-500" />
           </Button>
+          <Link to={`/admin/theaters/${row._id}/rooms`}>
+            <Button variant="ghost" size="icon" title="Manage Rooms">
+              <DoorOpen className="h-4 w-4 text-primary-600" />
+            </Button>
+          </Link>
           <Button variant="ghost" size="icon" onClick={() => confirmDelete(row)} title="Delete" className="hover:bg-red-50 hover:text-red-600">
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -298,28 +315,6 @@ export default function TheatersPage() {
                 aspectRatio="video"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Theatre Video URL</label>
-                <input
-                  type="url"
-                  {...register('theatreVideoUrl')}
-                  className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.theatreVideoUrl ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-                  placeholder="e.g. https://youtube.com/..."
-                />
-                {errors.theatreVideoUrl && <p className="mt-1 text-sm text-red-600">{errors.theatreVideoUrl.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Branch Video URL</label>
-                <input
-                  type="url"
-                  {...register('branchVideoUrl')}
-                  className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.branchVideoUrl ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-                  placeholder="e.g. https://youtube.com/..."
-                />
-                {errors.branchVideoUrl && <p className="mt-1 text-sm text-red-600">{errors.branchVideoUrl.message}</p>}
-              </div>
-            </div>
           </div>
 
           {/* LOCATION */}
@@ -327,24 +322,10 @@ export default function TheatersPage() {
             <h3 className="text-sm font-bold text-slate-800 border-b border-slate-200 pb-2 uppercase tracking-wider">Location</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
-                <select
-                  {...register('city')}
-                  className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.city ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-                >
-                  <option value="">Select city</option>
-                  {cities.map(city => (
-                    <option key={city._id} value={city._id}>{city.name}</option>
-                  ))}
-                </select>
-                {errors.city && <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>}
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
                 <select
                   {...register('location')}
                   className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.location ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-                  disabled={!selectedCity}
                 >
                   <option value="">Select location</option>
                   {locations.map(loc => (
@@ -375,137 +356,39 @@ export default function TheatersPage() {
             </div>
           </div>
 
-          {/* PRICING & CAPACITY */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-slate-800 border-b border-slate-200 pb-2 uppercase tracking-wider">Pricing & Capacity</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Capacity</label>
-                <input
-                  type="number"
-                  {...register('capacity', { valueAsNumber: true })}
-                  className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.capacity ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-                />
-                {errors.capacity && <p className="mt-1 text-sm text-red-600">{errors.capacity.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Base Price / Hr</label>
-                <input
-                  type="number"
-                  {...register('pricePerHour', { valueAsNumber: true })}
-                  className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.pricePerHour ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-                />
-                {errors.pricePerHour && <p className="mt-1 text-sm text-red-600">{errors.pricePerHour.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Additional Guest Price</label>
-                <input
-                  type="number"
-                  {...register('additionalGuestPrice', { valueAsNumber: true })}
-                  className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.additionalGuestPrice ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-                />
-                {errors.additionalGuestPrice && <p className="mt-1 text-sm text-red-600">{errors.additionalGuestPrice.message}</p>}
-              </div>
+          <div className="space-y-4 border-t border-slate-200 pt-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800">Rooms</h3>
+              <Button type="button" variant="outline" size="sm" onClick={() => setRoomDrafts((rooms) => [...rooms, blankRoom()])}>
+                <Plus className="mr-1 h-4 w-4" /> Add Room
+              </Button>
             </div>
+            {roomDrafts.map((room, roomIndex) => (
+              <div key={room._id || roomIndex} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-slate-800">Room {roomIndex + 1}</h4>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setRoomDrafts((rooms) => rooms.filter((_, index) => index !== roomIndex))} className="text-red-500">Remove Room</Button>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <input value={room.name} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, name: event.target.value } : item))} placeholder="Room Name *" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
+                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, image: event.target.files?.[0] || null } : item))} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                  <textarea value={room.description} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, description: event.target.value } : item))} placeholder="Description" className="rounded-md border border-slate-300 px-3 py-2 text-sm sm:col-span-2" rows="2" />
+                  <label className="text-sm font-medium text-slate-700">Capacity *<input type="number" min="1" value={room.capacity} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, capacity: event.target.value } : item))} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /></label>
+                  <label className="text-sm font-medium text-slate-700">Price / Hr *<input type="number" min="0" value={room.basePrice} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, basePrice: event.target.value } : item))} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /></label>
+                  <label className="text-sm font-medium text-slate-700">Additional Guest Price *<input type="number" min="0" value={room.additionalGuestPrice} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, additionalGuestPrice: event.target.value } : item))} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /></label>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wider text-slate-600">Time Slots</span><Button type="button" variant="outline" size="sm" onClick={() => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, slots: [...item.slots, { startTime: '', endTime: '', isActive: true }] } : item))}>Add Time Slot</Button></div>
+                  {room.slots.map((slot, slotIndex) => <div key={slot._id || slotIndex} className="flex gap-2"><input value={slot.startTime} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, slots: item.slots.map((value, current) => current === slotIndex ? { ...value, startTime: event.target.value } : value) } : item))} placeholder="10:00 AM" className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm" /><input value={slot.endTime} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, slots: item.slots.map((value, current) => current === slotIndex ? { ...value, endTime: event.target.value } : value) } : item))} placeholder="01:00 PM" className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm" /><Button type="button" variant="ghost" size="icon" onClick={() => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, slots: item.slots.filter((_, current) => current !== slotIndex) } : item))}><Trash2 className="h-4 w-4 text-red-500" /></Button></div>)}
+                </div>
+                <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={room.isActive} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, isActive: event.target.checked } : item))} /> Active</label>
+              </div>
+            ))}
           </div>
 
-          {/* FEATURES */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-slate-800 border-b border-slate-200 pb-2 uppercase tracking-wider">Features</h3>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Event Types (Select multiple)</label>
-              <Controller
-                name="eventTypes"
-                control={control}
-                render={({ field }) => (
-                  <div className="flex flex-wrap gap-2 p-3 border border-slate-300 rounded-md min-h-[80px]">
-                    {eventTypes.length === 0 ? (
-                      <p className="text-xs text-slate-400 m-auto">No event types available. Add some in Event Types page.</p>
-                    ) : (
-                      eventTypes.map(type => {
-                        const isSelected = (field.value || []).includes(type._id);
-                        return (
-                          <button
-                            key={type._id}
-                            type="button"
-                            onClick={() => {
-                              const current = field.value || [];
-                              if (isSelected) {
-                                field.onChange(current.filter(id => id !== type._id));
-                              } else {
-                                field.onChange([...current, type._id]);
-                              }
-                            }}
-                            className={`px-3 py-1 rounded-full text-sm border transition-colors ${
-                              isSelected
-                                ? 'bg-primary-600 border-primary-600 text-white'
-                                : 'bg-white border-slate-300 text-slate-700 hover:border-primary-400'
-                            }`}
-                          >
-                            {type.name}
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                )}
-              />
-              {errors.eventTypes && <p className="mt-1 text-sm text-red-600">{errors.eventTypes.message}</p>}
-            </div>
-          </div>
-
-          {/* AVAILABILITY */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-slate-800 border-b border-slate-200 pb-2 uppercase tracking-wider">Availability</h3>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-slate-700">Time Slots</label>
-                <Button type="button" variant="outline" size="sm" onClick={() => appendSlot({ startTime: '10:00 AM', endTime: '01:00 PM' })}>
-                  <Plus className="h-4 w-4 mr-1" /> Add Slot
-                </Button>
-              </div>
-              <div className="space-y-2 max-h-48 overflow-y-auto p-1">
-                {slotFields.length === 0 ? (
-                  <p className="text-sm text-slate-400 text-center py-3 border border-dashed border-slate-200 rounded-md">
-                    No time slots added. Click "+ Add Slot" to add one.
-                  </p>
-                ) : (
-                  slotFields.map((field, index) => (
-                    <div key={field.id} className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        {...register(`slots.${index}.startTime`)}
-                        placeholder="e.g. 10:00 AM"
-                        className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-primary-600 sm:text-sm sm:leading-6 px-3"
-                      />
-                      <span className="text-slate-500">to</span>
-                      <input
-                        type="text"
-                        {...register(`slots.${index}.endTime`)}
-                        placeholder="e.g. 01:00 PM"
-                        className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-primary-600 sm:text-sm sm:leading-6 px-3"
-                      />
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removeSlot(index)} className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))
-                )}
-                {errors.slots && <p className="mt-1 text-sm text-red-600">{errors.slots.message || "Invalid slots"}</p>}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-100">
-              <input
-                type="checkbox"
-                id="isActive"
-                {...register('isActive')}
-                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-600"
-              />
-              <label htmlFor="isActive" className="text-sm font-medium text-slate-700">
-                Active (Visible on website)
-              </label>
-            </div>
+          <div className="flex items-center gap-2 border-t border-slate-100 pt-4">
+            <input type="checkbox" id="isActive" {...register('isActive')} className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-600" />
+            <label htmlFor="isActive" className="text-sm font-medium text-slate-700">Active (Visible on website)</label>
           </div>
         </div>
       </FormModal>

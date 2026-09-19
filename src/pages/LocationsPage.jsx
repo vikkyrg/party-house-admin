@@ -15,7 +15,6 @@ import ImageUploader from '../components/common/ImageUploader';
 import { getImageUrl } from '../utils/imageUtils';
 
 import { useLocations } from '../hooks/useLocations';
-import { useCities } from '../hooks/useCities';
 import { locationSchema } from '../validations/locationSchema';
 import { useDebounce } from '../hooks/useDebounce';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -39,7 +38,7 @@ export default function LocationsPage() {
   // Form setup
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(locationSchema),
-    defaultValues: { isActive: true, city: '' },
+    defaultValues: { isActive: true },
   });
 
   // Data fetching
@@ -48,9 +47,6 @@ export default function LocationsPage() {
     limit: 10,
     search: debouncedSearch,
   });
-
-  const { data: citiesData, isLoading: isCitiesLoading } = useCities({ limit: 100 });
-  const cities = citiesData?.data?.cities || citiesData?.data || [];
 
   // Mutations
   const createMutation = useMutation({
@@ -91,7 +87,7 @@ export default function LocationsPage() {
   const handleOpenAddModal = () => {
     setEditingLocation(null);
     setImageFile(null);
-    reset({ name: '', city: '', pincode: '', isActive: true });
+    reset({ name: '', displayName: '', address: '', area: '', cityName: 'Bengaluru', stateName: 'Karnataka', countryName: 'India', pincode: '', googleMapLink: '', description: '', isActive: true });
     setIsModalOpen(true);
   };
 
@@ -99,7 +95,7 @@ export default function LocationsPage() {
     setEditingLocation(location);
     setImageFile(location.image?.url || null);
     setValue('name', location.name);
-    setValue('city', location.city?._id || location.city);
+    ['displayName', 'address', 'area', 'cityName', 'stateName', 'countryName', 'googleMapLink', 'description'].forEach((field) => setValue(field, location[field] || ''));
     setValue('pincode', location.pincode || '');
     setValue('isActive', location.isActive);
     setIsModalOpen(true);
@@ -150,7 +146,7 @@ export default function LocationsPage() {
       )
     },
     { key: 'name', header: 'Location Name', sortable: true },
-    { key: 'city', header: 'City', render: (row) => row.city?.name || 'N/A' },
+    { key: 'cityName', header: 'City', render: (row) => row.cityName || row.city?.name || 'N/A' },
     { key: 'pincode', header: 'Pincode', render: (row) => row.pincode || '-' },
     { key: 'isActive', header: 'Status', render: (row) => <StatusBadge status={row.isActive} type="boolean" /> },
     {
@@ -230,23 +226,6 @@ export default function LocationsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
-            <select
-              {...register('city')}
-              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.city ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-              disabled={isCitiesLoading}
-            >
-              <option value="">Select a city</option>
-              {cities.map(city => (
-                <option key={city._id} value={city._id}>
-                  {city.name}
-                </option>
-              ))}
-            </select>
-            {errors.city && <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>}
-          </div>
-
-          <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Location Name</label>
             <input
               type="text"
@@ -255,6 +234,15 @@ export default function LocationsPage() {
               placeholder="e.g. Andheri West"
             />
             {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {['displayName', 'area', 'cityName', 'stateName', 'countryName', 'address', 'googleMapLink'].map((field) => (
+              <label key={field} className="block text-sm font-medium capitalize text-slate-700">
+                {field.replace(/([A-Z])/g, ' $1')}
+                <input type={field === 'googleMapLink' ? 'url' : 'text'} {...register(field)} className="mt-1 block w-full rounded-md border-0 px-3 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300" />
+              </label>
+            ))}
           </div>
 
           <div>
