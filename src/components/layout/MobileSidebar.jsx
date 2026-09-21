@@ -10,6 +10,7 @@ import {
   Film,
   MapPin,
   Tag,
+  Cake,
   PlusCircle,
   Image as ImageIcon,
   MessageSquareQuote,
@@ -27,7 +28,11 @@ const navItems = [
   { name: 'Theaters', path: '/admin/theaters', icon: Film, permission: 'manage:theaters' },
   { name: 'Locations', path: '/admin/locations', icon: MapPin, permission: 'manage:locations' },
   { name: 'Event Types', path: '/admin/event-types', icon: Tag, permission: 'manage:eventTypes' },
+  { name: 'Cakes', path: '/admin/cakes', icon: Cake, permission: 'manage:addOns' },
   { name: 'Add-ons', path: '/admin/addons', icon: PlusCircle, permission: 'manage:addOns' },
+  { name: 'Services', path: '/admin/services', icon: Tag, permission: 'manage:services' },
+  { name: 'Gallery', path: '/admin/gallery', icon: ImageIcon, permission: 'manage:gallery' },
+  { name: 'Blogs', path: '/admin/stories', icon: MessageSquareQuote, permission: 'manage:stories' },
   { name: 'Banners', path: '/admin/banners', icon: ImageIcon, permission: 'manage:banners' },
   { name: 'Testimonials', path: '/admin/testimonials', icon: MessageSquareQuote, permission: 'manage:testimonials' },
   { name: 'FAQs', path: '/admin/faqs', icon: HelpCircle, permission: 'manage:faqs' },
@@ -63,20 +68,24 @@ export default function MobileSidebar() {
       />
 
       {/* Drawer */}
-      <div className="fixed inset-y-0 left-0 flex w-72 flex-col bg-white shadow-xl">
-        <div className="flex h-16 items-center justify-between px-4 border-b border-slate-200">
-          <Link to="/admin" className="text-xl font-bold text-primary-600 truncate">
-            CS Cinemas
+      <div className="fixed inset-y-0 left-0 flex w-72 flex-col bg-[var(--color-surface)] shadow-xl">
+        <div className="flex h-[78px] items-center justify-between px-4 border-b border-[var(--color-border)]">
+          <Link to="/admin" className="flex items-center gap-0 group">
+            <img src="/logo.png" alt="Rio Party House" className="h-[50px] w-[60px] object-contain transition-transform duration-300 group-hover:scale-105" />
+            <div className="flex -ml-2 flex-col items-center justify-center leading-none">
+              <span className="block text-center text-[18px] font-bold tracking-[0.12em] leading-none text-primary-600">RIO</span>
+              <span className="mt-1 block whitespace-nowrap text-center text-[8px] font-extrabold tracking-[0.14em] leading-none text-text-primary">PARTY HOUSE</span>
+            </div>
           </Link>
           <button 
             onClick={() => setMobileDrawerOpen(false)}
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+            className="rounded-lg p-2 text-text-secondary hover:bg-[var(--color-surface-secondary)]"
           >
             <X className="h-6 w-6" />
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+        <nav className="flex-1 overflow-y-auto py-2 px-3 space-y-0.5">
           {filteredNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path || 
@@ -86,23 +95,23 @@ export default function MobileSidebar() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center rounded-lg px-3 py-2.5 transition-colors ${
+                className={`flex items-center rounded-xl px-3 py-1.5 transition-colors ${
                   isActive
-                    ? 'bg-primary-50 text-primary-600 font-medium'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-primary-50 text-text-primary font-semibold shadow-sm border border-[var(--color-border-hover)]'
+                    : 'text-text-secondary hover:bg-[var(--color-surface-secondary)] hover:text-text-primary'
                 }`}
               >
-                <Icon className={`mr-3 h-5 w-5 ${isActive ? 'text-primary-600' : 'text-slate-400'}`} />
+                <Icon className={`mr-3 h-5 w-5 ${isActive ? 'text-primary-600' : 'text-text-muted'}`} />
                 {item.name}
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-200">
+        <div className="p-3 border-t border-[var(--color-border)]">
           <button
             onClick={() => logout()}
-            className="flex w-full items-center rounded-lg px-3 py-2 text-red-600 hover:bg-red-50 transition-colors"
+            className="flex w-full items-center rounded-lg px-3 py-1.5 text-danger-600 hover:bg-danger-50 transition-colors"
           >
             <LogOut className="mr-3 h-5 w-5" />
             Logout

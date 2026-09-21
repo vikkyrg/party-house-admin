@@ -57,7 +57,7 @@ export default function DataTable({
               const widthClass = columnKey === 'actions'
                 ? 'w-[140px]'
                 : columnKey === 'image'
-                  ? 'w-[90px]'
+                  ? 'w-[140px]'
                   : columnKey === 'isActive' || columnKey === 'status'
                     ? 'w-[120px]'
                     : '';

@@ -38,7 +38,7 @@ export default function BannersPage() {
   // Form setup
   const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm({
     resolver: zodResolver(bannerSchema),
-    defaultValues: { isActive: true, position: 'homepage-hero', priority: 0 },
+    defaultValues: { isActive: true, priority: 0 },
   });
 
   // Data fetching
@@ -87,7 +87,7 @@ export default function BannersPage() {
   const handleOpenAddModal = () => {
     setEditingBanner(null);
     setImageFile(null);
-    reset({ title: '', link: '', position: 'homepage-hero', priority: 0, isActive: true, startDate: '', endDate: '' });
+    reset({ title: '', priority: 0, isActive: true });
     setIsModalOpen(true);
   };
 
@@ -95,12 +95,8 @@ export default function BannersPage() {
     setEditingBanner(banner);
     setImageFile(banner.image?.url || null);
     setValue('title', banner.title);
-    setValue('link', banner.link || '');
-    setValue('position', banner.position);
     setValue('priority', banner.priority || 0);
     setValue('isActive', banner.isActive);
-    setValue('startDate', banner.startDate ? banner.startDate.substring(0, 10) : '');
-    setValue('endDate', banner.endDate ? banner.endDate.substring(0, 10) : '');
     setIsModalOpen(true);
   };
 
@@ -152,7 +148,6 @@ export default function BannersPage() {
       )
     },
     { key: 'title', header: 'Title', sortable: true },
-    { key: 'position', header: 'Position', sortable: true, render: (row) => <span className="uppercase text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded">{row.position}</span> },
     { key: 'priority', header: 'Priority', sortable: true },
     { key: 'isActive', header: 'Status', render: (row) => <StatusBadge status={row.isActive} type="boolean" /> },
     {
@@ -241,52 +236,7 @@ export default function BannersPage() {
             {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Position</label>
-              <select
-                {...register('position')}
-                className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.position ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-              >
-                <option value="homepage-hero">Homepage Hero</option>
-                <option value="homepage-mid">Homepage Mid</option>
-                <option value="city-page">City Page</option>
-                <option value="footer">Footer</option>
-              </select>
-              {errors.position && <p className="mt-1 text-sm text-red-600">{errors.position.message}</p>}
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Link URL (Optional)</label>
-              <input
-                type="text"
-                {...register('link')}
-                className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.link ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-                placeholder="https://..."
-              />
-              {errors.link && <p className="mt-1 text-sm text-red-600">{errors.link.message}</p>}
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Start Date (Optional)</label>
-              <input
-                type="date"
-                {...register('startDate')}
-                className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.startDate ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">End Date (Optional)</label>
-              <input
-                type="date"
-                {...register('endDate')}
-                className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.endDate ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-              />
-            </div>
-          </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Priority (Higher = first)</label>

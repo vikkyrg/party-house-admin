@@ -8,6 +8,7 @@ import {
   Film,
   MapPin,
   Tag,
+  Cake,
   PlusCircle,
   Image as ImageIcon,
   MessageSquareQuote,
@@ -17,8 +18,6 @@ import {
   BarChart3,
   ShieldAlert,
   Settings,
-  ChevronLeft,
-  ChevronRight,
   LogOut
 } from 'lucide-react';
 
@@ -28,7 +27,7 @@ const navItems = [
   { name: 'Theaters', path: '/admin/theaters', icon: Film, permission: 'manage:theaters' },
   { name: 'Locations', path: '/admin/locations', icon: MapPin, permission: 'manage:locations' },
   { name: 'Event Types', path: '/admin/event-types', icon: Tag, permission: 'manage:eventTypes' },
-  { name: 'Cakes', path: '/admin/cakes', icon: Tag, permission: 'manage:addOns' },
+  { name: 'Cakes', path: '/admin/cakes', icon: Cake, permission: 'manage:addOns' },
   { name: 'Add-ons', path: '/admin/addons', icon: PlusCircle, permission: 'manage:addOns' },
   { name: 'Services', path: '/admin/services', icon: Tag, permission: 'manage:services' },
   { name: 'Gallery', path: '/admin/gallery', icon: ImageIcon, permission: 'manage:gallery' },
@@ -54,26 +53,30 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-20 flex flex-col bg-white border-r border-slate-200 transition-all duration-300 ease-in-out hidden md:flex ${
+      className={`fixed inset-y-0 left-0 z-20 flex flex-col bg-[var(--color-surface)] border-r border-[var(--color-border)] shadow-[2px_0_12px_rgba(0,0,0,0.02)] transition-all duration-300 ease-in-out hidden md:flex ${
         isSidebarCollapsed ? 'w-20' : 'w-64'
       }`}
     >
       {/* Brand Header */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-slate-200">
+      <div className="flex h-[78px] items-center justify-center px-4 border-b border-[var(--color-border)] shrink-0">
         {!isSidebarCollapsed && (
-          <Link to="/admin" className="text-xl font-bold text-primary-600 truncate">
-            CS Cinemas
+          <Link to="/admin" className="flex items-center justify-center gap-0 group">
+            <img src="/logo.png" alt="Rio Party House" className="h-[60px] w-[70px] object-contain transition-transform duration-300 group-hover:scale-105" />
+            <div className="flex -ml-2 w-[110px] flex-col items-center justify-center leading-none">
+              <span className="block text-center text-[20px] font-bold tracking-[0.12em] leading-none text-primary-600">RIO</span>
+              <span className="mt-1 block whitespace-nowrap text-center text-[9px] font-extrabold tracking-[0.14em] leading-none text-text-primary">PARTY HOUSE</span>
+            </div>
           </Link>
         )}
         {isSidebarCollapsed && (
-          <Link to="/admin" className="mx-auto text-xl font-bold text-primary-600">
-            CS
+          <Link to="/admin" className="mx-auto flex justify-center group">
+            <img src="/logo.png" alt="Rio Party House" className="h-[44px] w-[44px] object-contain transition-transform duration-300 group-hover:scale-105" />
           </Link>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-hide">
+      <nav className="flex-1 overflow-y-auto py-2 px-3 space-y-0.5 scrollbar-hide">
         {filteredNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path || 
@@ -83,14 +86,14 @@ export default function Sidebar() {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center rounded-lg px-3 py-2.5 transition-colors ${
+              className={`flex items-center rounded-xl px-3 py-1.5 transition-colors ${
                 isActive
-                  ? 'bg-primary-50 text-primary-600 font-medium'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-primary-50 text-text-primary font-semibold shadow-sm border border-[var(--color-border-hover)]'
+                  : 'text-text-secondary hover:bg-[var(--color-surface-secondary)] hover:text-text-primary'
               } ${isSidebarCollapsed ? 'justify-center' : ''}`}
               title={isSidebarCollapsed ? item.name : undefined}
             >
-              <Icon className={`h-5 w-5 ${isSidebarCollapsed ? '' : 'mr-3'} ${isActive ? 'text-primary-600' : 'text-slate-400'}`} />
+              <Icon className={`h-5 w-5 ${isSidebarCollapsed ? '' : 'mr-3'} ${isActive ? 'text-primary-600' : 'text-text-muted'}`} />
               {!isSidebarCollapsed && <span className="truncate">{item.name}</span>}
             </Link>
           );
@@ -98,27 +101,10 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer Controls */}
-      <div className="p-4 border-t border-slate-200 space-y-2">
-        <button
-          onClick={toggleSidebar}
-          className={`flex w-full items-center rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100 transition-colors ${
-            isSidebarCollapsed ? 'justify-center' : ''
-          }`}
-          title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {isSidebarCollapsed ? (
-            <ChevronRight className="h-5 w-5" />
-          ) : (
-            <>
-              <ChevronLeft className="h-5 w-5 mr-3" />
-              <span className="truncate">Collapse Sidebar</span>
-            </>
-          )}
-        </button>
-        
+      <div className="p-3 border-t border-[var(--color-border)] space-y-1 shrink-0">
         <button
           onClick={() => logout()}
-          className={`flex w-full items-center rounded-lg px-3 py-2 text-red-600 hover:bg-red-50 transition-colors ${
+          className={`flex w-full items-center rounded-lg px-3 py-1.5 text-danger-600 hover:bg-danger-50 transition-colors ${
             isSidebarCollapsed ? 'justify-center' : ''
           }`}
           title={isSidebarCollapsed ? 'Logout' : undefined}

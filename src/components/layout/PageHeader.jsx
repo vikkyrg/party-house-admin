@@ -1,13 +1,21 @@
 import Breadcrumbs from './Breadcrumbs';
 
-export default function PageHeader({ title, description, actions, showBreadcrumbs = true }) {
+export default function PageHeader({ title, eyebrow, description, actions, showBreadcrumbs = true }) {
   return (
-    <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+    <div className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
       <div>
         {showBreadcrumbs && <Breadcrumbs />}
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
+        
+        {eyebrow && (
+          <span className="text-[11px] font-bold tracking-widest text-primary-600 uppercase mb-1.5 block">
+            {eyebrow}
+          </span>
+        )}
+        
+        <h1 className="text-[28px] leading-tight font-black tracking-tight text-text-primary uppercase">{title}</h1>
+        
         {description && (
-          <p className="mt-1 text-sm text-slate-500">{description}</p>
+          <p className="mt-2.5 text-[15px] text-text-secondary max-w-2xl">{description}</p>
         )}
       </div>
       

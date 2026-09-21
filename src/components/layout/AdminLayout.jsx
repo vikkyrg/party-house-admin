@@ -8,7 +8,15 @@ export default function AdminLayout() {
   const { isSidebarCollapsed } = useUiStore();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-[var(--color-surface-secondary)] relative font-sans">
+      {/* Subtle Background Decoration */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.04] z-0 flex items-center justify-center">
+        <svg viewBox="0 0 1000 1000" className="w-[150vw] min-w-[1000px] text-primary-900" fill="currentColor" preserveAspectRatio="none">
+           {/* Abstract cinema/film curve representation */}
+           <path d="M0,500 C300,200 700,800 1000,500 L1000,0 L0,0 Z" />
+        </svg>
+      </div>
+      
       {/* Desktop Sidebar */}
       <Sidebar />
       
@@ -17,7 +25,7 @@ export default function AdminLayout() {
 
       {/* Main Content Wrapper */}
       <div 
-        className={`flex flex-col flex-1 overflow-hidden transition-all duration-300 ease-in-out ${
+        className={`flex flex-col flex-1 overflow-hidden transition-all duration-300 ease-in-out relative z-10 ${
           isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'
         }`}
       >
