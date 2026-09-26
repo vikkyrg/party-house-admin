@@ -12,7 +12,7 @@ import Button from '../components/common/Button';
 import FormModal from '../components/common/FormModal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import ImageUploader from '../components/common/ImageUploader';
-import { getImageUrl } from '../utils/imageUtils';
+import { getImageUrl, handleImageError } from '../utils/imageUtils';
 
 import { useBanners } from '../hooks/useBanners';
 import { bannerSchema } from '../validations/bannerSchema';
@@ -138,9 +138,9 @@ export default function BannersPage() {
       key: 'image', 
       header: 'Image', 
       render: (row) => (
-        <div className="h-12 w-24 rounded overflow-hidden bg-slate-100 flex items-center justify-center">
+        <div className="h-12 w-24 rounded overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
           {(row.image?.url || typeof row.image === 'string') ? (
-            <img src={getImageUrl(row.image)} alt={row.title} className="h-full w-full object-cover" />
+            <img src={getImageUrl(row.image)} alt={row.title} onError={handleImageError} className="h-full w-full object-contain p-0.5" />
           ) : (
             <span className="text-xs text-slate-400">No Image</span>
           )}

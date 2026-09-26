@@ -12,7 +12,7 @@ import Button from '../components/common/Button';
 import FormModal from '../components/common/FormModal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import ImageUploader from '../components/common/ImageUploader';
-import { getImageUrl } from '../utils/imageUtils';
+import { getImageUrl, handleImageError } from '../utils/imageUtils';
 
 import { reviewService } from '../services/reviewService';
 import { useTheaters } from '../hooks/useTheaters';
@@ -163,7 +163,14 @@ export default function ReviewsPage() {
       key: 'mediaType',
       header: 'Media',
       render: (row) => (
-        <span className="capitalize">{row.mediaType || 'None'}</span>
+        <div className="flex items-center gap-2">
+          {row.mediaType === 'image' && (row.mediaUrl || row.images?.[0]?.url) ? (
+            <div className="h-8 w-12 rounded overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200 shrink-0">
+              <img src={getImageUrl(row.mediaUrl || row.images?.[0]?.url)} alt="Review" onError={handleImageError} className="h-full w-full object-contain p-0.5" />
+            </div>
+          ) : null}
+          <span className="capitalize">{row.mediaType || 'None'}</span>
+        </div>
       )
     },
     { 

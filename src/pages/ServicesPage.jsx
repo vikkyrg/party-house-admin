@@ -12,7 +12,7 @@ import Button from '../components/common/Button';
 import FormModal from '../components/common/FormModal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import ImageUploader from '../components/common/ImageUploader';
-import { getImageUrl } from '../utils/imageUtils';
+import { getImageUrl, handleImageError } from '../utils/imageUtils';
 
 import { useServices } from '../hooks/useServices';
 import { serviceSchema } from '../validations/serviceSchema';
@@ -151,7 +151,7 @@ export default function ServicesPage() {
       render: (row) => (
         <div className="h-10 w-10 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
           {(row.image || typeof row.image === 'string') ? (
-            <img src={getImageUrl(row.image)} alt={row.title} className="h-full w-full object-cover" />
+            <img src={getImageUrl(row.image)} alt={row.title} onError={handleImageError} className="h-full w-full object-contain p-0.5" />
           ) : (
             <span className="text-[10px] text-slate-400">No Img</span>
           )}

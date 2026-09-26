@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { UploadCloud, X, Image as ImageIcon } from 'lucide-react';
 import { cn } from './Button';
-import { getImageUrl } from '../../utils/imageUtils';
+import { getImageUrl, handleImageError } from '../../utils/imageUtils';
 
 export default function ImageUploader({
   value,
@@ -98,7 +98,8 @@ export default function ImageUploader({
               <img 
                 src={previewUrl} 
                 alt="Preview" 
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                onError={handleImageError}
+                className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
               />
             )}
             <div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity flex items-center justify-center group-hover:opacity-100">

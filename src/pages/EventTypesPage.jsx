@@ -12,7 +12,7 @@ import FormModal from '../components/common/FormModal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import StatusBadge from '../components/common/StatusBadge';
 import ImageUploader from '../components/common/ImageUploader';
-import { getImageUrl } from '../utils/imageUtils';
+import { getImageUrl, handleImageError } from '../utils/imageUtils';
 
 import { useEventTypes } from '../hooks/useEventTypes';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -126,7 +126,7 @@ export default function EventTypesPage() {
       render: (row) => (
         <div className="h-10 w-10 rounded overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
           {(row.image?.url || typeof row.image === 'string') ? (
-            <img src={getImageUrl(row.image)} alt={row.name} className="h-full w-full object-cover" />
+            <img src={getImageUrl(row.image)} alt={row.name} onError={handleImageError} className="h-full w-full object-contain p-0.5" />
           ) : (
             <span className="text-[10px] text-slate-400">No Img</span>
           )}

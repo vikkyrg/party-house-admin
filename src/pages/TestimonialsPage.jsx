@@ -12,7 +12,7 @@ import Button from '../components/common/Button';
 import FormModal from '../components/common/FormModal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import ImageUploader from '../components/common/ImageUploader';
-import { getImageUrl } from '../utils/imageUtils';
+import { getImageUrl, handleImageError } from '../utils/imageUtils';
 
 import { useTestimonials } from '../hooks/useTestimonials';
 import { testimonialSchema } from '../validations/testimonialSchema';
@@ -140,7 +140,7 @@ export default function TestimonialsPage() {
       render: (row) => (
         <div className="h-10 w-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
           {(row.image?.url || typeof row.image === 'string') ? (
-            <img src={getImageUrl(row.image)} alt={row.customerName} className="h-full w-full object-cover" />
+            <img src={getImageUrl(row.image)} alt={row.customerName} onError={handleImageError} className="h-full w-full object-cover object-center" />
           ) : (
             <span className="text-[10px] text-slate-400">No Img</span>
           )}
