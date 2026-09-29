@@ -27,7 +27,7 @@ const blankRoom = () => ({
   _id: null,
   name: '',
   description: '',
-  couple: 2,
+  couple: '',
   maximumMembers: 10,
   price: 0,
   slots: [{ startTime: '10:00 AM', endTime: '01:00 PM', isActive: true }],
@@ -373,7 +373,7 @@ export default function TheatersPage() {
                   <input value={room.name} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, name: event.target.value } : item))} placeholder="Room Name *" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
                   <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, image: event.target.files?.[0] || null } : item))} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
                   <textarea value={room.description} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, description: event.target.value } : item))} placeholder="Description" className="rounded-md border border-slate-300 px-3 py-2 text-sm sm:col-span-2" rows="2" />
-                  <label className="text-sm font-medium text-slate-700">Couple *<input type="number" min="1" value={room.couple} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, couple: event.target.value } : item))} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /></label>
+                  <label className="text-sm font-medium text-slate-700">Couple<input type="number" min="1" value={room.couple} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, couple: event.target.value } : item))} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /></label>
                   <label className="text-sm font-medium text-slate-700">Maximum Members *<input type="number" min="1" value={room.maximumMembers} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, maximumMembers: event.target.value } : item))} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /></label>
                   <label className="text-sm font-medium text-slate-700">Price / Hr *<input type="number" min="0" value={room.price} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, price: event.target.value } : item))} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /></label>
                 </div>

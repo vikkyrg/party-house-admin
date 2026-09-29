@@ -24,8 +24,7 @@ import {
 const navItems = [
   { name: 'Dashboard', path: '/admin', icon: LayoutDashboard, permission: 'view:dashboard' },
   { name: 'Bookings', path: '/admin/bookings', icon: CalendarDays, permission: 'manage:bookings' },
-  { name: 'Theaters', path: '/admin/theaters', icon: Film, permission: 'manage:theaters' },
-  { name: 'Locations', path: '/admin/locations', icon: MapPin, permission: 'manage:locations' },
+  { name: 'Rooms', path: '/admin/rooms', icon: Film, permission: 'manage:theaters' },
   { name: 'Event Types', path: '/admin/event-types', icon: Tag, permission: 'manage:eventTypes' },
   { name: 'Cakes', path: '/admin/cakes', icon: Cake, permission: 'manage:addOns' },
   { name: 'Add-ons', path: '/admin/addons', icon: PlusCircle, permission: 'manage:addOns' },
