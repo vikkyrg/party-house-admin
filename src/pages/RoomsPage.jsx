@@ -33,8 +33,7 @@ export default function RoomsPage() {
     const data = new FormData();
     Object.entries(form).forEach(([key, value]) => {
       if (key === 'couple') {
-        // Only send couple if a value was entered; skip if empty so backend treats it as not set
-        if (value !== '' && value !== null && value !== undefined) data.append(key, value);
+        data.append(key, value ?? '');
       } else if (key === 'features' || key === 'amenities') data.append(key, JSON.stringify(value.split(',').map((item) => item.trim()).filter(Boolean)));
       else if (key === 'slots') data.append(key, JSON.stringify(value.split(',').map((item) => { const [startTime, endTime] = item.split(' - '); return { startTime: startTime?.trim(), endTime: endTime?.trim(), isActive: true }; })));
       else if (key === 'removeImage') { if (value) data.append('removeImage', 'true'); }
