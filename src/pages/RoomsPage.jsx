@@ -14,7 +14,8 @@ const emptyRoom = {
   googleMapLink: '',
   couple: '',
   maximumMembers: 10,
-  price: 0,
+  weekdayPrice: 0,
+  weekendPrice: 0,
   features: '',
   amenities: '',
   slots: '10:00 AM - 01:00 PM',
@@ -65,7 +66,8 @@ export default function RoomsPage() {
     data.append('googleMapLink', form.googleMapLink.trim());
     data.append('couple', form.couple ?? '');
     data.append('maximumMembers', form.maximumMembers);
-    data.append('price', form.price);
+    data.append('weekdayPrice', form.weekdayPrice);
+    data.append('weekendPrice', form.weekendPrice);
     data.append('isActive', form.isActive);
     data.append('features', JSON.stringify(form.features.split(',').map((i) => i.trim()).filter(Boolean)));
     data.append('amenities', JSON.stringify(form.amenities.split(',').map((i) => i.trim()).filter(Boolean)));
@@ -131,7 +133,8 @@ export default function RoomsPage() {
       googleMapLink: room.googleMapLink || '',
       couple: room.couple || '',
       maximumMembers: room.maximumMembers ?? 10,
-      price: room.price ?? 0,
+      weekdayPrice: room.weekdayPrice ?? room.price ?? 0,
+      weekendPrice: room.weekendPrice ?? room.price ?? 0,
       features: (room.features || []).join(', '),
       amenities: (room.amenities || []).join(', '),
       slots: (room.slots || []).map((s) => `${s.startTime} - ${s.endTime}`).join(', '),
@@ -180,7 +183,7 @@ export default function RoomsPage() {
                 <div>
                   <h3 className="font-bold text-slate-900">{room.name}</h3>
                   <p className="text-sm text-slate-500">
-                    {room.couple ? `Couple: ${room.couple} · ` : ''}Maximum Members: {room.maximumMembers ?? 10} · ₹{room.price ?? 0}/hour
+                    {room.couple ? `Couple: ${room.couple} · ` : ''}Max: {room.maximumMembers ?? 10} · ₹{room.weekdayPrice ?? room.price ?? 0}/hr (Wkday) · ₹{room.weekendPrice ?? room.price ?? 0}/hr (Wkend)
                   </p>
                   {room.location && (
                     <p className="text-xs text-slate-400">📍 {room.location}</p>
@@ -289,8 +292,8 @@ export default function RoomsPage() {
             />
           </label>
 
-          {/* Couple / MaxMembers / Price */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* Couple / MaxMembers / Prices */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <label className="text-sm font-medium text-slate-700">
               Couple
               <input
@@ -313,13 +316,24 @@ export default function RoomsPage() {
               />
             </label>
             <label className="text-sm font-medium text-slate-700">
-              Price / Hr *
+              Weekday Price / Hr *
               <input
                 required
                 type="number"
                 min="0"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
+                value={form.weekdayPrice}
+                onChange={(e) => setForm({ ...form, weekdayPrice: e.target.value })}
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              Weekend Price / Hr *
+              <input
+                required
+                type="number"
+                min="0"
+                value={form.weekendPrice}
+                onChange={(e) => setForm({ ...form, weekendPrice: e.target.value })}
                 className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
               />
             </label>
