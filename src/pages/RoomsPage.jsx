@@ -14,8 +14,9 @@ const emptyRoom = {
   googleMapLink: '',
   couple: '',
   maximumMembers: 10,
-  weekdayPrice: 0,
-  weekendPrice: 0,
+  price1Hour: 0,
+  price2Hours: 0,
+  price3Hours: 0,
   features: '',
   amenities: '',
   slots: '10:00 AM - 01:00 PM',
@@ -66,8 +67,9 @@ export default function RoomsPage() {
     data.append('googleMapLink', form.googleMapLink.trim());
     data.append('couple', form.couple ?? '');
     data.append('maximumMembers', form.maximumMembers);
-    data.append('weekdayPrice', form.weekdayPrice);
-    data.append('weekendPrice', form.weekendPrice);
+    data.append('price1Hour', form.price1Hour);
+    data.append('price2Hours', form.price2Hours);
+    data.append('price3Hours', form.price3Hours);
     data.append('isActive', form.isActive);
     data.append('features', JSON.stringify(form.features.split(',').map((i) => i.trim()).filter(Boolean)));
     data.append('amenities', JSON.stringify(form.amenities.split(',').map((i) => i.trim()).filter(Boolean)));
@@ -133,8 +135,9 @@ export default function RoomsPage() {
       googleMapLink: room.googleMapLink || '',
       couple: room.couple || '',
       maximumMembers: room.maximumMembers ?? 10,
-      weekdayPrice: room.weekdayPrice ?? room.price ?? 0,
-      weekendPrice: room.weekendPrice ?? room.price ?? 0,
+      price1Hour: room.price1Hour ?? 0,
+      price2Hours: room.price2Hours ?? 0,
+      price3Hours: room.price3Hours ?? 0,
       features: (room.features || []).join(', '),
       amenities: (room.amenities || []).join(', '),
       slots: (room.slots || []).map((s) => `${s.startTime} - ${s.endTime}`).join(', '),
@@ -183,7 +186,7 @@ export default function RoomsPage() {
                 <div>
                   <h3 className="font-bold text-slate-900">{room.name}</h3>
                   <p className="text-sm text-slate-500">
-                    {room.couple ? `Couple: ${room.couple} · ` : ''}Max: {room.maximumMembers ?? 10} · ₹{room.weekdayPrice ?? room.price ?? 0}/hr (Wkday) · ₹{room.weekendPrice ?? room.price ?? 0}/hr (Wkend)
+                    {room.couple ? `Couple: ${room.couple} · ` : ''}Max: {room.maximumMembers ?? 10} · 1H: ₹{room.price1Hour ?? 0} · 2H: ₹{room.price2Hours ?? 0} · 3H: ₹{room.price3Hours ?? 0}
                   </p>
                   {room.location && (
                     <p className="text-xs text-slate-400">📍 {room.location}</p>
@@ -316,24 +319,35 @@ export default function RoomsPage() {
               />
             </label>
             <label className="text-sm font-medium text-slate-700">
-              Weekday Price / Hr *
+              1 Hour Price *
               <input
                 required
                 type="number"
                 min="0"
-                value={form.weekdayPrice}
-                onChange={(e) => setForm({ ...form, weekdayPrice: e.target.value })}
+                value={form.price1Hour}
+                onChange={(e) => setForm({ ...form, price1Hour: e.target.value })}
                 className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
               />
             </label>
             <label className="text-sm font-medium text-slate-700">
-              Weekend Price / Hr *
+              2 Hours Price *
               <input
                 required
                 type="number"
                 min="0"
-                value={form.weekendPrice}
-                onChange={(e) => setForm({ ...form, weekendPrice: e.target.value })}
+                value={form.price2Hours}
+                onChange={(e) => setForm({ ...form, price2Hours: e.target.value })}
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              3 Hours Price *
+              <input
+                required
+                type="number"
+                min="0"
+                value={form.price3Hours}
+                onChange={(e) => setForm({ ...form, price3Hours: e.target.value })}
                 className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
               />
             </label>

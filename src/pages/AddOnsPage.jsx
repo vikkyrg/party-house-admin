@@ -23,7 +23,7 @@ import { queryKeys } from '../lib/queryKeys';
 
 export default function AddOnsPage() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('Extra Decoration');
+  const [activeTab, setActiveTab] = useState('Special Services');
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 500);
   
@@ -182,29 +182,12 @@ export default function AddOnsPage() {
         description="Manage the add-ons and services for bookings." 
         actions={
           <Button leftIcon={Plus} onClick={handleOpenAddModal}>
-            Add {activeTab.replace('Extra ', '').replace('Choose ', '').replace(/s$/, '')}
+            Add Special Service
           </Button>
         }
       />
 
-      {/* Tabs */}
-      <div className="border-b border-slate-200 mt-4 mb-4">
-        <nav className="-mb-px flex space-x-8">
-          {['Extra Decoration', 'Choose Gifts', 'Special Services'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => { setActiveTab(tab); setPage(1); }}
-              className={`${
-                activeTab === tab
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
-              } whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors`}
-            >
-              {tab}
-            </button>
-          ))}
-        </nav>
-      </div>
+
 
       <DataTableToolbar
         search={searchTerm}
@@ -227,7 +210,7 @@ export default function AddOnsPage() {
           emptyStateProps={{
             title: `No ${activeTab.toLowerCase()} found`,
             description: debouncedSearch ? 'Try adjusting your search query.' : `Get started by adding a new ${activeTab.toLowerCase()}.`,
-            actionLabel: debouncedSearch ? null : `Add ${activeTab.replace('Extra ', '').replace('Choose ', '').replace(/s$/, '')}`,
+            actionLabel: debouncedSearch ? null : `Add Special Service`,
             onAction: handleOpenAddModal
           }}
         />
@@ -236,7 +219,7 @@ export default function AddOnsPage() {
       <FormModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={editingAddOn ? `Edit ${activeTab.replace('Extra ', '').replace('Choose ', '').replace(/s$/, '')}` : `Add New ${activeTab.replace('Extra ', '').replace('Choose ', '').replace(/s$/, '')}`}
+        title={editingAddOn ? `Edit Special Service` : `Add New Special Service`}
         onSubmit={handleSubmit(onSubmit)}
         isLoading={isSubmitting}
       >
