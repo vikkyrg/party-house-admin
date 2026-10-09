@@ -61,9 +61,8 @@ export default function Sidebar() {
         {!isSidebarCollapsed && (
           <Link to="/admin" className="flex items-center justify-center gap-0 group">
             <img src="/logo.png" alt="Rio Party House" className="h-[60px] w-[70px] object-contain transition-transform duration-300 group-hover:scale-105" />
-            <div className="flex -ml-2 w-[110px] flex-col items-center justify-center leading-none">
-              <span className="block text-center text-[20px] font-bold tracking-[0.12em] leading-none text-primary-600">RIO</span>
-              <span className="mt-1 block whitespace-nowrap text-center text-[9px] font-extrabold tracking-[0.14em] leading-none text-text-primary">PARTY HOUSE</span>
+            <div className="flex -ml-1 w-[110px] items-center justify-center">
+              <img src="/party.png" alt="Rio Party House" className="h-[52px] object-contain" />
             </div>
           </Link>
         )}

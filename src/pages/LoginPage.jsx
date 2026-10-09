@@ -51,11 +51,12 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-8 shadow-lg ring-1 ring-slate-200">
         <div className="text-center">
-          <div className="mx-auto flex items-center justify-center">
-            <img src="/logo.png" alt="RIO PARTY HOUSE" className="h-20 object-contain" />
+          <div className="mx-auto flex items-center justify-center gap-0">
+            <img src="/logo.png" alt="RIO Emblem" className="h-20 object-contain" />
+            <img src="/party.png" alt="PARTY HOUSE" className="h-[70px] -ml-2 object-contain" />
           </div>
-          <h2 className="mt-6 text-3xl font-bold tracking-tight text-slate-900">
-            RIO PARTY HOUSE Admin
+          <h2 className="mt-4 text-xl font-bold tracking-tight text-slate-900">
+            Admin Portal
           </h2>
           <p className="mt-2 text-sm text-slate-600">
             Sign in to access the dashboard

@@ -1,9 +1,10 @@
+import { Link } from 'react-router-dom';
 import PageHeader from '../components/layout/PageHeader';
 import { useDashboardStats } from '../hooks/useDashboard';
 import LoadingState from '../components/common/LoadingState';
 import ErrorState from '../components/common/ErrorState';
 import { formatCurrency } from '../lib/formatters';
-import { CalendarDays, Film, Map, Users, TrendingUp, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { CalendarDays, Film, Map, Users, TrendingUp, Clock, CheckCircle, XCircle, LayoutGrid, Cake, ShoppingBag, Sparkles, Image as ImageIcon } from 'lucide-react';
 
 export default function DashboardPage() {
   const { data: statsData, isLoading, isError, error, refetch } = useDashboardStats();
@@ -20,6 +21,7 @@ export default function DashboardPage() {
       icon: TrendingUp,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-100',
+      link: '/admin/reports',
     },
     {
       name: 'Total Bookings',
@@ -27,20 +29,50 @@ export default function DashboardPage() {
       icon: CalendarDays,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
+      link: '/admin/bookings',
+    },
+  ];
+
+  const contentCards = [
+    {
+      name: 'Total Rooms',
+      value: stats.totalRooms || 0,
+      icon: LayoutGrid,
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-100',
+      link: '/admin/rooms',
     },
     {
-      name: 'Active Theaters',
-      value: stats.totalTheaters || 0,
-      icon: Film,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
+      name: 'Event Types',
+      value: stats.totalEventTypes || 0,
+      icon: Sparkles,
+      color: 'text-fuchsia-600',
+      bgColor: 'bg-fuchsia-100',
+      link: '/admin/event-types',
     },
     {
-      name: 'Total Customers',
-      value: stats.totalUsers || 0,
-      icon: Users,
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-100',
+      name: 'Add-ons',
+      value: stats.totalAddOns || 0,
+      icon: ShoppingBag,
+      color: 'text-rose-600',
+      bgColor: 'bg-rose-100',
+      link: '/admin/add-ons',
+    },
+    {
+      name: 'Services',
+      value: stats.totalServices || 0,
+      icon: Map,
+      color: 'text-teal-600',
+      bgColor: 'bg-teal-100',
+      link: '/admin/services',
+    },
+    {
+      name: 'Gallery Items',
+      value: stats.totalGallery || 0,
+      icon: ImageIcon,
+      color: 'text-cyan-600',
+      bgColor: 'bg-cyan-100',
+      link: '/admin/gallery',
     },
   ];
 
@@ -51,6 +83,7 @@ export default function DashboardPage() {
       icon: CalendarDays,
       color: 'text-primary-600',
       bgColor: 'bg-primary-50',
+      link: '/admin/bookings',
     },
     {
       name: 'Pending',
@@ -58,6 +91,7 @@ export default function DashboardPage() {
       icon: Clock,
       color: 'text-amber-600',
       bgColor: 'bg-amber-50',
+      link: '/admin/bookings?status=pending',
     },
     {
       name: 'Confirmed',
@@ -65,6 +99,7 @@ export default function DashboardPage() {
       icon: CheckCircle,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50',
+      link: '/admin/bookings?status=confirmed',
     },
     {
       name: 'Cancelled',
@@ -72,6 +107,7 @@ export default function DashboardPage() {
       icon: XCircle,
       color: 'text-red-600',
       bgColor: 'bg-red-50',
+      link: '/admin/bookings?status=cancelled',
     },
   ];
 
@@ -84,9 +120,9 @@ export default function DashboardPage() {
       />
 
       <h3 className="mb-4 text-lg font-medium text-slate-900">Key Metrics</h3>
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
         {statCards.map((stat) => (
-          <div key={stat.name} className="card flex items-center p-6">
+          <Link key={stat.name} to={stat.link} className="card flex items-center p-6 hover:shadow-md transition-shadow">
             <div className={`flex h-14 w-14 items-center justify-center rounded-full ${stat.bgColor}`}>
               <stat.icon className={`h-6 w-6 ${stat.color}`} />
             </div>
@@ -94,20 +130,35 @@ export default function DashboardPage() {
               <p className="text-sm font-medium text-slate-500">{stat.name}</p>
               <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
             </div>
-          </div>
+          </Link>
+        ))}
+      </div>
+
+      <h3 className="mb-4 text-lg font-medium text-slate-900">Content Metrics</h3>
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {contentCards.map((stat) => (
+          <Link key={stat.name} to={stat.link} className="card flex items-center p-4 hover:shadow-md transition-shadow">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-full ${stat.bgColor}`}>
+              <stat.icon className={`h-5 w-5 ${stat.color}`} />
+            </div>
+            <div className="ml-3">
+              <p className="text-xs font-medium text-slate-500">{stat.name}</p>
+              <p className="text-xl font-bold text-slate-900">{stat.value}</p>
+            </div>
+          </Link>
         ))}
       </div>
 
       <h3 className="mb-4 text-lg font-medium text-slate-900">Booking Status</h3>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {bookingStats.map((stat) => (
-          <div key={stat.name} className="card flex flex-col items-center justify-center p-6 text-center">
+          <Link key={stat.name} to={stat.link} className="card flex flex-col items-center justify-center p-6 text-center hover:shadow-md transition-shadow">
             <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-full ${stat.bgColor}`}>
               <stat.icon className={`h-6 w-6 ${stat.color}`} />
             </div>
             <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
             <p className="text-sm font-medium text-slate-500">{stat.name}</p>
-          </div>
+          </Link>
         ))}
       </div>
 

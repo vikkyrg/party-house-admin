@@ -72,9 +72,8 @@ export default function MobileSidebar() {
         <div className="flex h-[78px] items-center justify-between px-4 border-b border-[var(--color-border)]">
           <Link to="/admin" className="flex items-center gap-0 group">
             <img src="/logo.png" alt="Rio Party House" className="h-[50px] w-[60px] object-contain transition-transform duration-300 group-hover:scale-105" />
-            <div className="flex -ml-2 flex-col items-center justify-center leading-none">
-              <span className="block text-center text-[18px] font-bold tracking-[0.12em] leading-none text-primary-600">RIO</span>
-              <span className="mt-1 block whitespace-nowrap text-center text-[8px] font-extrabold tracking-[0.14em] leading-none text-text-primary">PARTY HOUSE</span>
+            <div className="flex -ml-1 flex-col items-center justify-center">
+              <img src="/party.png" alt="Rio Party House" className="h-[46px] object-contain" />
             </div>
           </Link>
           <button 
