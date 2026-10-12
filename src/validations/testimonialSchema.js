@@ -7,5 +7,4 @@ export const testimonialSchema = z.object({
   theater: z.string().optional().or(z.literal('')),
   isFeatured: z.boolean().default(false),
   isActive: z.boolean().default(true),
-  sortOrder: z.number().default(0),
 });

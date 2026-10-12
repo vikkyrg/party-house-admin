@@ -38,7 +38,7 @@ export default function AddOnsPage() {
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(addonSchema),
-    defaultValues: { isActive: true, price: 0, sortOrder: 0, category: activeTab },
+    defaultValues: { isActive: true, price: 0, category: activeTab },
   });
 
   // Data fetching
@@ -88,7 +88,7 @@ export default function AddOnsPage() {
   const handleOpenAddModal = () => {
     setEditingAddOn(null);
     setImageFile(null);
-    reset({ name: '', price: 0, category: activeTab, isActive: true, sortOrder: 1 });
+    reset({ name: '', price: 0, category: activeTab, isActive: true });
     setIsModalOpen(true);
   };
 
@@ -99,7 +99,6 @@ export default function AddOnsPage() {
     setValue('price', addon.price);
     setValue('category', addon.category);
     setValue('isActive', addon.isActive);
-    setValue('sortOrder', addon.sortOrder);
     setIsModalOpen(true);
   };
 
@@ -154,7 +153,6 @@ export default function AddOnsPage() {
       )
     },
     { key: 'name', header: 'Add-on Name', sortable: true },
-    { key: 'sortOrder', header: 'Sort Order' },
     { key: 'isActive', header: 'Published', render: (row) => <StatusBadge status={row.isActive} type="boolean" /> },
     {
       key: 'actions',
@@ -252,15 +250,6 @@ export default function AddOnsPage() {
               className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.price ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
             />
             {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Sort Order</label>
-            <input
-              type="number"
-              {...register('sortOrder', { valueAsNumber: true })}
-              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.sortOrder ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-            />
           </div>
 
           <div className="flex items-center gap-2 mt-4">

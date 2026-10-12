@@ -38,7 +38,7 @@ export default function ServicesPage() {
   // Form setup
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(serviceSchema),
-    defaultValues: { isActive: true, sortOrder: 0 },
+    defaultValues: { isActive: true },
   });
 
   // Data fetching
@@ -88,7 +88,7 @@ export default function ServicesPage() {
   const handleOpenAddModal = () => {
     setEditingService(null);
     setImageFile(null);
-    reset({ title: '', description: '', features: '', sortOrder: 0, isActive: true });
+    reset({ title: '', description: '', features: '', isActive: true });
     setIsModalOpen(true);
   };
 
@@ -98,7 +98,6 @@ export default function ServicesPage() {
     setValue('title', service.title);
     setValue('description', service.description);
     setValue('features', service.features ? service.features.join(', ') : '');
-    setValue('sortOrder', service.sortOrder || 0);
     setValue('isActive', service.isActive);
     setIsModalOpen(true);
   };
@@ -159,7 +158,6 @@ export default function ServicesPage() {
       )
     },
     { key: 'title', header: 'Title', sortable: true },
-    { key: 'sortOrder', header: 'Order', sortable: true },
     { key: 'isActive', header: 'Status', render: (row) => <StatusBadge status={row.isActive} type="boolean" /> },
     {
       key: 'actions',
@@ -268,16 +266,6 @@ export default function ServicesPage() {
               placeholder="e.g. Decorations, Catering, Music"
             />
             {errors.features && <p className="mt-1 text-sm text-red-600">{errors.features.message}</p>}
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Sort Order</label>
-            <input
-              type="number"
-              {...register('sortOrder', { valueAsNumber: true })}
-              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.sortOrder ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-            />
-            {errors.sortOrder && <p className="mt-1 text-sm text-red-600">{errors.sortOrder.message}</p>}
           </div>
 
           <div className="flex items-center gap-2 mt-4">

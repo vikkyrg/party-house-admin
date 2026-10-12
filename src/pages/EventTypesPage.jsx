@@ -22,6 +22,7 @@ import { queryKeys } from '../lib/queryKeys';
 // Simple schema just for the form
 const eventTypeSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
+  description: z.string().max(500).optional(),
   isActive: z.boolean().default(true),
 });
 
@@ -77,7 +78,7 @@ export default function EventTypesPage() {
   const handleOpenAddModal = () => {
     setEditingEventType(null);
     setImageFile(null);
-    reset({ name: '', isActive: true });
+    reset({ name: '', description: '', isActive: true });
     setIsModalOpen(true);
   };
 
@@ -85,6 +86,7 @@ export default function EventTypesPage() {
     setEditingEventType(eventType);
     setImageFile(eventType.image?.url || null);
     setValue('name', eventType.name);
+    setValue('description', eventType.description || '');
     setValue('isActive', eventType.isActive !== false); // Default true if undefined
     setIsModalOpen(true);
   };
@@ -134,6 +136,15 @@ export default function EventTypesPage() {
       )
     },
     { key: 'name', header: 'Name', sortable: true },
+    { 
+      key: 'description', 
+      header: 'Description', 
+      render: (row) => row.description ? (
+        <span className="line-clamp-2 max-w-xs text-xs text-slate-500">{row.description}</span>
+      ) : (
+        <span className="text-slate-400 italic text-xs">No description</span>
+      )
+    },
     { key: 'isActive', header: 'Status', render: (row) => <StatusBadge status={row.isActive !== false} type="boolean" /> },
     {
       key: 'actions',
@@ -209,6 +220,17 @@ export default function EventTypesPage() {
               placeholder="e.g. Birthday Party"
             />
             {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+            <textarea
+              {...register('description')}
+              rows={3}
+              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.description ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+              placeholder="Brief description of the event celebration package..."
+            />
+            {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>}
           </div>
 
           <div className="flex items-center gap-2 mt-4">

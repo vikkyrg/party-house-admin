@@ -40,7 +40,6 @@ export default function CakesPage() {
     resolver: zodResolver(cakeSchema),
     defaultValues: { 
       isActive: true, 
-      sortOrder: 1, 
       category: 'standard',
       sizes: [{ name: '0.5kg', label: 'Half Kg', price: 500 }] 
     },
@@ -99,7 +98,7 @@ export default function CakesPage() {
   const handleOpenAddModal = () => {
     setEditingCake(null);
     setImageFile(null);
-    reset({ name: '', description: '', category: activeCategory, isActive: true, sortOrder: 1, sizes: [{ name: '0.5kg', label: 'Half Kg', price: 500 }] });
+    reset({ name: '', description: '', category: activeCategory, isActive: true, sizes: [{ name: '0.5kg', label: 'Half Kg', price: 500 }] });
     setIsModalOpen(true);
   };
 
@@ -110,7 +109,6 @@ export default function CakesPage() {
     setValue('description', cake.description || '');
     setValue('category', cake.category || 'standard');
     setValue('isActive', cake.isActive);
-    setValue('sortOrder', cake.sortOrder);
     setValue('sizes', cake.sizes || []);
     setIsModalOpen(true);
   };
@@ -189,7 +187,6 @@ export default function CakesPage() {
         </div>
       )
     },
-    { key: 'sortOrder', header: 'Sort Order' },
     { key: 'isActive', header: 'Published', render: (row) => <StatusBadge status={row.isActive} type="boolean" /> },
     {
       key: 'actions',
@@ -343,15 +340,6 @@ export default function CakesPage() {
               ))}
               {errors.sizes && <p className="mt-1 text-sm text-red-600">{errors.sizes.message || "Invalid sizes"}</p>}
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Sort Order</label>
-            <input
-              type="number"
-              {...register('sortOrder', { valueAsNumber: true })}
-              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.sortOrder ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-            />
           </div>
 
           <div className="flex items-center gap-2 mt-4">

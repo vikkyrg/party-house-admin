@@ -15,9 +15,7 @@ import {
   Image as ImageIcon,
   MessageSquareQuote,
   HelpCircle,
-  Star,
   Users,
-  BarChart3,
   ShieldAlert,
   Settings,
 } from 'lucide-react';
@@ -34,11 +32,8 @@ const navItems = [
   { name: 'Gallery', path: '/admin/gallery', icon: ImageIcon, permission: 'manage:gallery' },
   { name: 'Blogs', path: '/admin/stories', icon: MessageSquareQuote, permission: 'manage:stories' },
   { name: 'Banners', path: '/admin/banners', icon: ImageIcon, permission: 'manage:banners' },
-  { name: 'Testimonials', path: '/admin/testimonials', icon: MessageSquareQuote, permission: 'manage:testimonials' },
   { name: 'FAQs', path: '/admin/faqs', icon: HelpCircle, permission: 'manage:faqs' },
-  { name: 'Reviews', path: '/admin/reviews', icon: Star, permission: 'manage:reviews' },
   { name: 'Users', path: '/admin/users', icon: Users, permission: 'manage:users' },
-  { name: 'Reports', path: '/admin/reports', icon: BarChart3, permission: 'view:reports' },
   { name: 'Audit Logs', path: '/admin/audit-logs', icon: ShieldAlert, permission: 'view:auditLogs' },
   { name: 'Settings', path: '/admin/settings', icon: Settings, permission: 'manage:settings' },
 ];

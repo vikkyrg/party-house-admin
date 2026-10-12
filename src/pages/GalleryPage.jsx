@@ -38,7 +38,7 @@ export default function GalleryPage() {
   // Form setup
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(gallerySchema),
-    defaultValues: { isActive: true, sortOrder: 0, category: 'Home' },
+    defaultValues: { isActive: true, category: 'Home' },
   });
 
   // Data fetching
@@ -88,7 +88,7 @@ export default function GalleryPage() {
   const handleOpenAddModal = () => {
     setEditingGallery(null);
     setImageFile(null);
-    reset({ title: '', category: 'Home', sortOrder: 0, isActive: true });
+    reset({ title: '', category: 'Home', isActive: true });
     setIsModalOpen(true);
   };
 
@@ -97,7 +97,6 @@ export default function GalleryPage() {
     setImageFile(gallery.image || null);
     setValue('title', gallery.title || '');
     setValue('category', gallery.category || 'Home');
-    setValue('sortOrder', gallery.sortOrder || 0);
     setValue('isActive', gallery.isActive);
     setIsModalOpen(true);
   };
@@ -151,7 +150,6 @@ export default function GalleryPage() {
     },
     { key: 'title', header: 'Title', render: (row) => row.title || <span className="text-slate-400 italic">No Title</span> },
     { key: 'category', header: 'Category', sortable: true },
-    { key: 'sortOrder', header: 'Order', sortable: true },
     { key: 'isActive', header: 'Status', render: (row) => <StatusBadge status={row.isActive} type="boolean" /> },
     {
       key: 'actions',
@@ -252,16 +250,6 @@ export default function GalleryPage() {
               <option value="Other">Other</option>
             </select>
             {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>}
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Sort Order</label>
-            <input
-              type="number"
-              {...register('sortOrder', { valueAsNumber: true })}
-              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.sortOrder ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-            />
-            {errors.sortOrder && <p className="mt-1 text-sm text-red-600">{errors.sortOrder.message}</p>}
           </div>
 
           <div className="flex items-center gap-2 mt-4">

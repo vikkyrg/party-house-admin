@@ -15,5 +15,4 @@ export const cakeSchema = z.object({
     }
   }),
   isActive: z.boolean().default(true),
-  sortOrder: z.coerce.number().default(0),
 });

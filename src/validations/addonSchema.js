@@ -6,5 +6,4 @@ export const addonSchema = z.object({
   price: z.number().min(0, 'Price must be positive'),
   category: z.literal('Special Services').or(z.enum(['Special Services'])),
   isActive: z.boolean().default(true),
-  sortOrder: z.coerce.number().default(0),
 });

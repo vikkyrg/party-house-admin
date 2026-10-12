@@ -38,7 +38,7 @@ export default function TestimonialsPage() {
   // Form setup
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(testimonialSchema),
-    defaultValues: { isActive: true, isFeatured: false, rating: 5, sortOrder: 0 },
+    defaultValues: { isActive: true, isFeatured: false, rating: 5 },
   });
 
   // Data fetching
@@ -87,7 +87,7 @@ export default function TestimonialsPage() {
   const handleOpenAddModal = () => {
     setEditingTestimonial(null);
     setImageFile(null);
-    reset({ customerName: '', text: '', rating: 5, isFeatured: false, isActive: true, sortOrder: 0 });
+    reset({ customerName: '', text: '', rating: 5, isFeatured: false, isActive: true });
     setIsModalOpen(true);
   };
 
@@ -99,7 +99,6 @@ export default function TestimonialsPage() {
     setValue('rating', testimonial.rating);
     setValue('isActive', testimonial.isActive);
     setValue('isFeatured', testimonial.isFeatured);
-    setValue('sortOrder', testimonial.sortOrder);
     setIsModalOpen(true);
   };
 
