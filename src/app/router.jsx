@@ -33,8 +33,10 @@ import NotFoundPage from '../pages/NotFoundPage';
 import ServicesPage from '../pages/ServicesPage';
 import GalleryPage from '../pages/GalleryPage';
 import StoriesPage from '../pages/StoriesPage';
+import ContactMessagesPage from '../pages/ContactMessagesPage';
 
 const ProtectedRoute = ({ children, requiredRole, requiredPermission }) => {
+
   const { isAuthenticated, user, isLoading } = useAuthStore();
 
   if (isLoading) {
@@ -207,6 +209,14 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'contact-messages',
+        element: (
+          <ProtectedRoute requiredPermission="manage:contactMessages">
+            <ContactMessagesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'reviews',
         element: (
           <ProtectedRoute requiredPermission="manage:reviews">
@@ -214,6 +224,7 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+
       {
         path: 'users',
         element: (

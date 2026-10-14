@@ -24,6 +24,7 @@ const permissions = {
     'manage:services',
     'manage:gallery',
     'manage:stories',
+    'manage:contactMessages',
   ],
   [ROLES.ADMIN]: [
     'view:dashboard',
@@ -41,8 +42,10 @@ const permissions = {
     'manage:services',
     'manage:gallery',
     'manage:stories',
+    'manage:contactMessages',
     // Admins cannot manage users or settings, and cannot view audit logs
   ],
+
   [ROLES.CUSTOMER]: [],
 };
 

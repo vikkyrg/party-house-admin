@@ -12,6 +12,7 @@ import {
   PlusCircle,
   Image as ImageIcon,
   MessageSquareQuote,
+  Mail,
   HelpCircle,
   Users,
   ShieldAlert,
@@ -31,15 +32,20 @@ const navItems = [
   { name: 'Blogs', path: '/admin/stories', icon: MessageSquareQuote, permission: 'manage:stories' },
   { name: 'Banners', path: '/admin/banners', icon: ImageIcon, permission: 'manage:banners' },
   { name: 'FAQs', path: '/admin/faqs', icon: HelpCircle, permission: 'manage:faqs' },
+  { name: 'Contact Messages', path: '/admin/contact-messages', icon: Mail, permission: 'manage:contactMessages' },
   { name: 'Users', path: '/admin/users', icon: Users, permission: 'manage:users' },
   { name: 'Audit Logs', path: '/admin/audit-logs', icon: ShieldAlert, permission: 'view:auditLogs' },
   { name: 'Settings', path: '/admin/settings', icon: Settings, permission: 'manage:settings' },
 ];
 
+
+import { useUnreadContactCount } from '../../hooks/useUnreadContactCount';
+
 export default function Sidebar() {
   const location = useLocation();
   const { user, logout } = useAuthStore();
   const { isSidebarCollapsed, toggleSidebar } = useUiStore();
+  const { data: unreadContactCount = 0 } = useUnreadContactCount();
 
   const filteredNavItems = navItems.filter(item => 
     hasPermission(user?.role, item.permission)
@@ -74,24 +80,44 @@ export default function Sidebar() {
           const Icon = item.icon;
           const isActive = location.pathname === item.path || 
                           (item.path !== '/admin' && location.pathname.startsWith(item.path));
+          const isContactItem = item.path === '/admin/contact-messages';
+          const badgeCount = isContactItem ? unreadContactCount : 0;
+          const badgeText = badgeCount > 99 ? '99+' : badgeCount;
 
           return (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center rounded-xl px-3 py-1.5 transition-colors ${
+              className={`flex items-center rounded-xl px-3 py-1.5 transition-colors relative ${
                 isActive
                   ? 'bg-primary-50 text-text-primary font-semibold shadow-sm border border-[var(--color-border-hover)]'
                   : 'text-text-secondary hover:bg-[var(--color-surface-secondary)] hover:text-text-primary'
               } ${isSidebarCollapsed ? 'justify-center' : ''}`}
-              title={isSidebarCollapsed ? item.name : undefined}
+              title={isSidebarCollapsed ? `${item.name}${badgeCount > 0 ? ` (${badgeText} unread)` : ''}` : undefined}
             >
-              <Icon className={`h-5 w-5 ${isSidebarCollapsed ? '' : 'mr-3'} ${isActive ? 'text-primary-600' : 'text-text-muted'}`} />
-              {!isSidebarCollapsed && <span className="truncate">{item.name}</span>}
+              <div className="relative flex items-center">
+                <Icon className={`h-5 w-5 ${isSidebarCollapsed ? '' : 'mr-3'} ${isActive ? 'text-primary-600' : 'text-text-muted'}`} />
+                {isSidebarCollapsed && badgeCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                    {badgeText}
+                  </span>
+                )}
+              </div>
+              {!isSidebarCollapsed && (
+                <div className="flex flex-1 items-center justify-between min-w-0">
+                  <span className="truncate">{item.name}</span>
+                  {badgeCount > 0 && (
+                    <span className="ml-2 inline-flex h-5 min-w-[20px] px-1.5 items-center justify-center rounded-full bg-red-600 text-[11px] font-bold text-white shadow-sm ring-1 ring-white/20 animate-in fade-in">
+                      {badgeText}
+                    </span>
+                  )}
+                </div>
+              )}
             </Link>
           );
         })}
       </nav>
+
 
       {/* Footer Controls */}
       <div className="p-3 border-t border-[var(--color-border)] space-y-1 shrink-0">
