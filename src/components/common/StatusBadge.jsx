@@ -8,6 +8,8 @@ export function cn(...inputs) {
 const statusConfig = {
   // Booking Status
   pending: { label: 'Pending', colors: 'bg-amber-100 text-amber-800' },
+  pending_payment: { label: 'Pending Payment', colors: 'bg-amber-100 text-amber-800 border border-amber-200' },
+  pending_verification: { label: 'Awaiting Verify', colors: 'bg-cyan-100 text-cyan-800 border border-cyan-200' },
   confirmed: { label: 'Confirmed', colors: 'bg-blue-100 text-blue-800' },
   'in-progress': { label: 'In Progress', colors: 'bg-purple-100 text-purple-800' },
   completed: { label: 'Completed', colors: 'bg-emerald-100 text-emerald-800' },
@@ -15,6 +17,8 @@ const statusConfig = {
   'no-show': { label: 'No Show', colors: 'bg-slate-100 text-slate-800' },
   
   // Payment Status
+  submitted: { label: 'Submitted', colors: 'bg-indigo-100 text-indigo-800 border border-indigo-200' },
+  processing: { label: 'Processing', colors: 'bg-cyan-100 text-cyan-800' },
   paid: { label: 'Paid', colors: 'bg-emerald-100 text-emerald-800' },
   failed: { label: 'Failed', colors: 'bg-red-100 text-red-800' },
   refunded: { label: 'Refunded', colors: 'bg-slate-100 text-slate-800' },
@@ -46,7 +50,7 @@ export default function StatusBadge({ status, type = 'default', className }) {
   return (
     <span
       className={cn(
-        'inline-flex h-6 min-w-[72px] items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+        'inline-flex h-6 min-w-[72px] items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap shrink-0',
         config.colors,
         className
       )}

@@ -166,35 +166,35 @@ export default function RoomsPage() {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col space-y-4">
       <PageHeader title="Rooms" description="Manage rooms and room-specific time slots." />
-      <div className="grid gap-6 overflow-y-auto p-1 xl:grid-cols-[1fr_380px]">
+      <div className="grid gap-6 items-start p-1 xl:grid-cols-[1fr_390px]">
 
-        {/* Room List */}
-        <div className="space-y-3">
+        {/* Room List - Fixed/Sticky on viewport so it remains visible while scrolling */}
+        <div className="space-y-3 xl:sticky xl:top-4 xl:max-h-[calc(100vh-10rem)] xl:overflow-y-auto pr-1">
           {!loading && rooms.map((room) => (
-            <div key={room._id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="flex items-center gap-4">
+            <div key={room._id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-4 min-w-0">
                 {room.image && (
                   <img
                     src={getImageUrl(room.image)}
                     alt={room.name}
                     onError={handleImageError}
-                    className="h-16 w-20 rounded-lg object-contain bg-slate-100 p-0.5 border border-slate-200"
+                    className="h-16 w-20 rounded-lg object-contain bg-slate-100 p-0.5 border border-slate-200 shrink-0"
                   />
                 )}
-                <div>
-                  <h3 className="font-bold text-slate-900">{room.name}</h3>
-                  <p className="text-sm text-slate-500">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-slate-900 truncate">{room.name}</h3>
+                  <p className="text-sm text-slate-500 truncate">
                     {room.couple ? `Couple: ${room.couple} · ` : ''}Max: {room.maximumMembers ?? 10} · 1H: ₹{room.price1Hour ?? 0} · 2H: ₹{room.price2Hours ?? 0} · 3H: ₹{room.price3Hours ?? 0}
                   </p>
                   {room.location && (
-                    <p className="text-xs text-slate-400">📍 {room.location}</p>
+                    <p className="text-xs text-slate-400 truncate">📍 {room.location}</p>
                   )}
-                  <p className="text-xs text-slate-500">{room.isActive ? 'Active' : 'Inactive'}</p>
+                  <p className="text-xs text-slate-500 font-medium">{room.isActive ? 'Active' : 'Inactive'}</p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 shrink-0">
                 <Link to={`/admin/rooms/${room._id}/slots`}>
                   <Button variant="ghost" size="icon" title="Manage Slots">⌚</Button>
                 </Link>

@@ -50,17 +50,21 @@ export default function DataTable({
   return (
     <div className="box-border flex h-full w-full min-w-0 flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
       <div className="w-full min-w-0 overflow-x-auto">
-        <table className="w-full min-w-[720px] table-fixed divide-y divide-slate-200">
+        <table className="w-full min-w-[980px] divide-y divide-slate-200">
           <colgroup>
             {columns.map((col, idx) => {
               const columnKey = col.key || idx;
-              const widthClass = columnKey === 'actions'
-                ? 'w-[140px]'
+              const widthClass = col.width
+                ? col.width
+                : columnKey === 'actions'
+                ? 'w-[160px]'
                 : columnKey === 'image'
                   ? 'w-[140px]'
-                  : columnKey === 'isActive' || columnKey === 'status'
-                    ? 'w-[120px]'
-                    : '';
+                  : columnKey === 'isActive'
+                    ? 'w-[110px]'
+                    : columnKey === 'status' || columnKey === 'paymentStatus'
+                      ? 'w-[130px]'
+                      : '';
               return <col key={columnKey} className={widthClass} />;
             })}
           </colgroup>

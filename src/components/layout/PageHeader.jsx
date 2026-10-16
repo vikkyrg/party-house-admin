@@ -1,8 +1,10 @@
 import Breadcrumbs from './Breadcrumbs';
 
-export default function PageHeader({ title, eyebrow, description, actions, showBreadcrumbs = true }) {
+export default function PageHeader({ title, eyebrow, description, actions, children, showBreadcrumbs = true }) {
+  const headerActions = actions || children;
+
   return (
-    <div className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+    <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
       <div>
         {showBreadcrumbs && <Breadcrumbs />}
         
@@ -12,16 +14,16 @@ export default function PageHeader({ title, eyebrow, description, actions, showB
           </span>
         )}
         
-        <h1 className="text-[28px] leading-tight font-black tracking-tight text-text-primary uppercase">{title}</h1>
+        <h1 className="text-xl sm:text-[28px] leading-tight font-black tracking-tight text-text-primary uppercase">{title}</h1>
         
         {description && (
-          <p className="mt-2.5 text-[15px] text-text-secondary max-w-2xl">{description}</p>
+          <p className="mt-1.5 sm:mt-2.5 text-xs sm:text-[15px] text-text-secondary max-w-2xl">{description}</p>
         )}
       </div>
       
-      {actions && (
-        <div className="flex shrink-0 items-center gap-2">
-          {actions}
+      {headerActions && (
+        <div className="flex flex-wrap shrink-0 items-center gap-2">
+          {headerActions}
         </div>
       )}
     </div>
