@@ -496,10 +496,23 @@ export default function BookingDetailsPage() {
                   <span>{payment.rejectedReason}</span>
                 </div>
               )}
-              {booking.expiresAt && isPendingStatus && (
-                <div className="p-2.5 bg-rose-50 border border-rose-100 rounded text-rose-700 mt-2">
-                  <span className="font-semibold block">Slot Protection Window:</span>
-                  <span>{new Date(booking.expiresAt).toLocaleTimeString('en-IN')}</span>
+              {(booking.holdExpiresAt || booking.expiresAt) &&
+                ['pending', 'pending_payment'].includes(booking.status) &&
+                ['pending', 'failed'].includes(payment.status) && (
+                <div className={`p-2.5 rounded border mt-2 ${
+                  (new Date(booking.holdExpiresAt || booking.expiresAt) < new Date())
+                    ? 'bg-rose-50 border-rose-200 text-rose-800'
+                    : 'bg-amber-50 border-amber-200 text-amber-900'
+                }`}>
+                  <span className="font-semibold block text-[11px]">Temporary 10-Minute Hold:</span>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <span>Expires: {new Date(booking.holdExpiresAt || booking.expiresAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                    <span className="font-bold font-mono">
+                      {new Date(booking.holdExpiresAt || booking.expiresAt) > new Date()
+                        ? `${Math.max(0, Math.ceil((new Date(booking.holdExpiresAt || booking.expiresAt) - new Date()) / (60 * 1000)))}m left`
+                        : 'Expired'}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>

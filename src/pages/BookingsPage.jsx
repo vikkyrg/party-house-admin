@@ -238,22 +238,45 @@ export default function BookingsPage() {
       {
         header: 'Booking Ref',
         key: 'bookingId',
-        render: (row) => (
-          <div>
-            <Link
-              to={`/admin/bookings/${row._id}`}
-              className="font-mono font-bold text-primary-700 hover:text-primary-900 underline text-xs"
-            >
-              {row.bookingId}
-            </Link>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              {new Date(row.createdAt).toLocaleDateString('en-IN', {
-                month: 'short',
-                day: 'numeric',
-              })}
-            </p>
-          </div>
-        ),
+        render: (row) => {
+          const isPendingHold = ['pending', 'pending_payment'].includes(row.status) && ['pending', 'failed'].includes(row.payment?.status);
+          const holdExpiry = row.holdExpiresAt || row.expiresAt;
+          const remainingMinutes = holdExpiry ? Math.max(0, Math.ceil((new Date(holdExpiry).getTime() - Date.now()) / (60 * 1000))) : null;
+
+          return (
+            <div>
+              <Link
+                to={`/admin/bookings/${row._id}`}
+                className="font-mono font-bold text-primary-700 hover:text-primary-900 underline text-xs"
+              >
+                {row.bookingId}
+              </Link>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {new Date(row.createdAt).toLocaleDateString('en-IN', {
+                  month: 'short',
+                  day: 'numeric',
+                })} · {new Date(row.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+              {row.bulkBookingId && (
+                <div className="mt-1">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800" title={`Bulk Group: ${row.bulkBookingId}`}>
+                    Bulk: {row.bulkBookingId.split('-').pop()}
+                  </span>
+                </div>
+              )}
+              {isPendingHold && (
+                <div className="mt-1">
+                  <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                    remainingMinutes > 0 ? 'bg-amber-100 text-amber-900' : 'bg-rose-100 text-rose-800'
+                  }`}>
+                    <Clock className="w-2.5 h-2.5" />
+                    {remainingMinutes > 0 ? `${remainingMinutes}m hold left` : 'Hold expired'}
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        },
       },
       {
         header: 'Customer',
