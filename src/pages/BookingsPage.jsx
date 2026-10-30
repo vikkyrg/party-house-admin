@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -34,9 +34,16 @@ import { dashboardService } from '../services/dashboardService';
 import { useTheaters } from '../hooks/useTheaters';
 import { formatCurrency, formatDate } from '../lib/formatters';
 import { useDebounce } from '../hooks/useDebounce';
+import { useBookingNotifications } from '../hooks/useBookingNotifications';
 
 export default function BookingsPage() {
   const queryClient = useQueryClient();
+  const { markAllAsRead } = useBookingNotifications();
+
+  // WhatsApp-style: Automatically clear unread badge count when admin navigates to /admin/bookings
+  useEffect(() => {
+    markAllAsRead();
+  }, [markAllAsRead]);
 
   // Filters & State
   const [searchTerm, setSearchTerm] = useState('');
