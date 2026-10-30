@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Edit, Plus, Trash2 } from 'lucide-react';
+import { Edit, Plus, Trash2, GripVertical, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/layout/PageHeader';
 import Button from '../components/common/Button';
@@ -31,6 +31,9 @@ export default function RoomsPage() {
   const [images, setImages] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isReordering, setIsReordering] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
 
   const load = async () => {
     const res = await apiClient.get('/rooms?includeInactive=true');
@@ -44,6 +47,77 @@ export default function RoomsPage() {
       setLoading(false);
     });
   }, []);
+
+  const saveOrder = async (updatedRooms) => {
+    setRooms(updatedRooms);
+    setIsReordering(true);
+    try {
+      const roomIds = updatedRooms.map((r) => r._id);
+      await apiClient.put('/rooms/reorder', { roomIds });
+      toast.success('Room order updated');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to save room order');
+      await load();
+    } finally {
+      setIsReordering(false);
+    }
+  };
+
+  const moveUp = (index) => {
+    if (index <= 0 || isReordering) return;
+    const newRooms = [...rooms];
+    const temp = newRooms[index];
+    newRooms[index] = newRooms[index - 1];
+    newRooms[index - 1] = temp;
+    saveOrder(newRooms);
+  };
+
+  const moveDown = (index) => {
+    if (index >= rooms.length - 1 || isReordering) return;
+    const newRooms = [...rooms];
+    const temp = newRooms[index];
+    newRooms[index] = newRooms[index + 1];
+    newRooms[index + 1] = temp;
+    saveOrder(newRooms);
+  };
+
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index);
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = (index) => {
+    if (dragOverIndex === index) {
+      setDragOverIndex(null);
+    }
+  };
+
+  const handleDrop = (e, targetIndex) => {
+    e.preventDefault();
+    setDragOverIndex(null);
+    if (draggedIndex === null || draggedIndex === targetIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+
+    const newRooms = [...rooms];
+    const [draggedRoom] = newRooms.splice(draggedIndex, 1);
+    newRooms.splice(targetIndex, 0, draggedRoom);
+    setDraggedIndex(null);
+    saveOrder(newRooms);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
 
   const submit = async (event) => {
     event.preventDefault();
@@ -172,15 +246,63 @@ export default function RoomsPage() {
 
         {/* Room List - Fixed/Sticky on viewport so it remains visible while scrolling */}
         <div className="space-y-3 xl:sticky xl:top-4 xl:max-h-[calc(100vh-10rem)] xl:overflow-y-auto pr-1">
-          {!loading && rooms.map((room) => (
-            <div key={room._id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-4 min-w-0">
+          {!loading && rooms.map((room, index) => (
+            <div
+              key={room._id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragLeave={() => handleDragLeave(index)}
+              onDrop={(e) => handleDrop(e, index)}
+              onDragEnd={handleDragEnd}
+              className={`flex items-center justify-between rounded-xl border bg-white p-4 shadow-sm hover:shadow-md transition-all ${
+                draggedIndex === index
+                  ? 'opacity-40 border-dashed border-amber-500 scale-[0.98]'
+                  : dragOverIndex === index
+                  ? 'border-amber-500 ring-2 ring-amber-300'
+                  : 'border-slate-200'
+              }`}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                {/* Drag Handle & Position Indicator */}
+                <div className="flex items-center gap-1.5 shrink-0 text-slate-400">
+                  <div
+                    className="cursor-grab active:cursor-grabbing p-1 -ml-1 rounded hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                    title="Drag to reorder room"
+                  >
+                    <GripVertical className="h-5 w-5" />
+                  </div>
+                  <div className="flex flex-col -my-1">
+                    <button
+                      type="button"
+                      disabled={index === 0 || isReordering}
+                      onClick={() => moveUp(index)}
+                      className="p-0.5 text-slate-400 hover:text-amber-700 hover:bg-slate-100 rounded disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-slate-400 transition-colors"
+                      title="Move Up"
+                    >
+                      <ChevronUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={index === rooms.length - 1 || isReordering}
+                      onClick={() => moveDown(index)}
+                      className="p-0.5 text-slate-400 hover:text-amber-700 hover:bg-slate-100 rounded disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-slate-400 transition-colors"
+                      title="Move Down"
+                    >
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <span className="w-5 text-center font-bold text-xs text-slate-400">
+                    {index + 1}
+                  </span>
+                </div>
+
                 {room.image && (
                   <img
                     src={getImageUrl(room.image)}
                     alt={room.name}
                     onError={handleImageError}
-                    className="h-16 w-20 rounded-lg object-contain bg-slate-100 p-0.5 border border-slate-200 shrink-0"
+                    className="h-16 w-20 rounded-lg object-contain bg-slate-100 p-0.5 border border-slate-200 shrink-0 select-none"
                   />
                 )}
                 <div className="min-w-0">

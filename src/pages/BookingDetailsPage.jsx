@@ -23,6 +23,8 @@ import {
   Send,
 } from 'lucide-react';
 import { bookingService } from '../services/bookingService';
+import { useEffect } from 'react';
+import { useBookingNotifications } from '../hooks/useBookingNotifications';
 
 export default function BookingDetailsPage() {
   const { id } = useParams();
@@ -46,6 +48,14 @@ export default function BookingDetailsPage() {
   });
 
   const booking = data?.data;
+  const { markAsReadByBookingId } = useBookingNotifications();
+
+  // Mark notification for this booking as read when opened
+  useEffect(() => {
+    if (booking?.bookingId || id) {
+      markAsReadByBookingId(booking?.bookingId || id);
+    }
+  }, [booking?.bookingId, id, markAsReadByBookingId]);
 
   // Status Mutation
   const updateStatusMutation = useMutation({

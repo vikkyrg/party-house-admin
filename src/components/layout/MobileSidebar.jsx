@@ -4,6 +4,7 @@ import { X, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import { hasPermission } from '../../lib/permissions';
+import { useBookingNotifications } from '../../hooks/useBookingNotifications';
 import {
   LayoutDashboard,
   CalendarDays,
@@ -23,7 +24,7 @@ import {
 
 const navItems = [
   { name: 'Dashboard', path: '/admin', icon: LayoutDashboard, permission: 'view:dashboard' },
-  { name: 'Bookings', path: '/admin/bookings', icon: CalendarDays, permission: 'manage:bookings' },
+  { name: 'Bookings', path: '/admin/bookings', icon: CalendarDays, permission: 'manage:bookings', hasBadge: true },
   { name: 'Theaters', path: '/admin/theaters', icon: Film, permission: 'manage:theaters' },
   { name: 'Locations', path: '/admin/locations', icon: MapPin, permission: 'manage:locations' },
   { name: 'Event Types', path: '/admin/event-types', icon: Tag, permission: 'manage:eventTypes' },
@@ -34,24 +35,22 @@ const navItems = [
   { name: 'Blogs', path: '/admin/stories', icon: MessageSquareQuote, permission: 'manage:stories' },
   { name: 'Banners', path: '/admin/banners', icon: ImageIcon, permission: 'manage:banners' },
   { name: 'FAQs', path: '/admin/faqs', icon: HelpCircle, permission: 'manage:faqs' },
-  { name: 'Contact Messages', path: '/admin/contact-messages', icon: Mail, permission: 'manage:contactMessages' },
   { name: 'Users', path: '/admin/users', icon: Users, permission: 'manage:users' },
   { name: 'Audit Logs', path: '/admin/audit-logs', icon: ShieldAlert, permission: 'view:auditLogs' },
   { name: 'Settings', path: '/admin/settings', icon: Settings, permission: 'manage:settings' },
 ];
 
-
-import { useUnreadContactCount } from '../../hooks/useUnreadContactCount';
-
 export default function MobileSidebar() {
   const location = useLocation();
   const { user, logout } = useAuthStore();
   const { isMobileDrawerOpen, setMobileDrawerOpen } = useUiStore();
-  const { data: unreadContactCount = 0 } = useUnreadContactCount();
+  const { unreadCount } = useBookingNotifications();
 
   const filteredNavItems = navItems.filter(item => 
     hasPermission(user?.role, item.permission)
   );
+
+  const formattedCount = unreadCount > 99 ? '99+' : unreadCount;
 
   // Close drawer on route change
   useEffect(() => {
@@ -90,9 +89,7 @@ export default function MobileSidebar() {
             const Icon = item.icon;
             const isActive = location.pathname === item.path || 
                             (item.path !== '/admin' && location.pathname.startsWith(item.path));
-            const isContactItem = item.path === '/admin/contact-messages';
-            const badgeCount = isContactItem ? unreadContactCount : 0;
-            const badgeText = badgeCount > 99 ? '99+' : badgeCount;
+            const showBadge = item.hasBadge && unreadCount > 0;
 
             return (
               <Link
@@ -108,16 +105,15 @@ export default function MobileSidebar() {
                   <Icon className={`mr-3 h-5 w-5 shrink-0 ${isActive ? 'text-primary-600' : 'text-text-muted'}`} />
                   <span className="truncate">{item.name}</span>
                 </div>
-                {badgeCount > 0 && (
-                  <span className="ml-2 inline-flex h-5 min-w-[20px] px-1.5 items-center justify-center rounded-full bg-red-600 text-[11px] font-bold text-white shadow-sm ring-1 ring-white/20">
-                    {badgeText}
+                {showBadge && (
+                  <span className="ml-2 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-red-600 text-white text-[11px] font-extrabold shadow-xs">
+                    {formattedCount}
                   </span>
                 )}
               </Link>
             );
           })}
         </nav>
-
 
         <div className="p-3 border-t border-[var(--color-border)]">
           <button

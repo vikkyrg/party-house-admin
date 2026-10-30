@@ -6,4 +6,9 @@ export const addonService = {
     const { data } = await apiClient.get(`/admin/addons?${params.toString()}`);
     return data;
   },
+
+  reorder: async (ids) => {
+    const { data } = await apiClient.put('/addons/reorder', { addOnIds: ids, orderedIds: ids });
+    return data;
+  },
 };

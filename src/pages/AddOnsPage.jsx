@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Plus, Edit, Trash2, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
@@ -11,10 +11,11 @@ import StatusBadge from '../components/common/StatusBadge';
 import Button from '../components/common/Button';
 import FormModal from '../components/common/FormModal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
-import ImageUploader from '../components/common/ImageUploader';
+import MultiImageUploader from '../components/common/MultiImageUploader';
 import { getImageUrl, handleImageError } from '../utils/imageUtils';
 
 import { useAddOns } from '../hooks/useAddOns';
+import { addonService } from '../services/addonService';
 import { addonSchema } from '../validations/addonSchema';
 import { useDebounce } from '../hooks/useDebounce';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -34,11 +35,15 @@ export default function AddOnsPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [addOnToDelete, setAddOnToDelete] = useState(null);
   
-  const [imageFile, setImageFile] = useState(null);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [isReordering, setIsReordering] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [orderedItems, setOrderedItems] = useState([]);
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(addonSchema),
-    defaultValues: { isActive: true, price: 0, category: activeTab },
+    defaultValues: { isActive: true, price1Hour: 0, price2Hours: 0, price3Hours: 0, category: activeTab },
   });
 
   // Data fetching
@@ -48,6 +53,86 @@ export default function AddOnsPage() {
     search: debouncedSearch,
     category: activeTab
   });
+
+  const rawList = useMemo(() => {
+    return data?.data?.addons || data?.data || [];
+  }, [data]);
+
+  useEffect(() => {
+    setOrderedItems(rawList);
+  }, [rawList]);
+
+  const saveOrder = async (newList) => {
+    setOrderedItems(newList);
+    setIsReordering(true);
+    try {
+      const addOnIds = newList.map(item => item._id || item.id);
+      await addonService.reorder(addOnIds);
+      toast.success('Add-on order updated');
+      queryClient.invalidateQueries({ queryKey: queryKeys.addOns.all() });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update order');
+      setOrderedItems(rawList);
+    } finally {
+      setIsReordering(false);
+    }
+  };
+
+  const moveUp = (index) => {
+    if (index <= 0 || isReordering) return;
+    const nextList = [...orderedItems];
+    const temp = nextList[index];
+    nextList[index] = nextList[index - 1];
+    nextList[index - 1] = temp;
+    saveOrder(nextList);
+  };
+
+  const moveDown = (index) => {
+    if (index >= orderedItems.length - 1 || isReordering) return;
+    const nextList = [...orderedItems];
+    const temp = nextList[index];
+    nextList[index] = nextList[index + 1];
+    nextList[index + 1] = temp;
+    saveOrder(nextList);
+  };
+
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index);
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = (index) => {
+    if (dragOverIndex === index) {
+      setDragOverIndex(null);
+    }
+  };
+
+  const handleDrop = (e, targetIndex) => {
+    e.preventDefault();
+    setDragOverIndex(null);
+    if (draggedIndex === null || draggedIndex === targetIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+
+    const nextList = [...orderedItems];
+    const [draggedItem] = nextList.splice(draggedIndex, 1);
+    nextList.splice(targetIndex, 0, draggedItem);
+    setDraggedIndex(null);
+    saveOrder(nextList);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
 
   // Mutations
   const createMutation = useMutation({
@@ -87,16 +172,40 @@ export default function AddOnsPage() {
   // Handlers
   const handleOpenAddModal = () => {
     setEditingAddOn(null);
-    setImageFile(null);
-    reset({ name: '', price: 0, category: activeTab, isActive: true });
+    setImageFiles([]);
+    reset({ name: '', price1Hour: 0, price2Hours: 0, price3Hours: 0, category: activeTab, isActive: true });
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (addon) => {
     setEditingAddOn(addon);
-    setImageFile(addon.image?.url || null);
+    const existing = [];
+    if (Array.isArray(addon.images) && addon.images.length > 0) {
+      addon.images.forEach((img, idx) => {
+        existing.push({
+          id: 'existing_' + (img.publicId || idx),
+          url: img.url,
+          publicId: img.publicId,
+          alt: img.alt,
+        });
+      });
+    } else if (addon.image?.url || (typeof addon.image === 'string' && addon.image)) {
+      const url = addon.image?.url || addon.image;
+      existing.push({
+        id: 'existing_single',
+        url,
+        publicId: addon.image?.publicId,
+        alt: addon.image?.alt,
+      });
+    }
+    setImageFiles(existing);
     setValue('name', addon.name);
-    setValue('price', addon.price);
+    const p1 = addon.price1Hour ?? addon.pricing?.oneHour ?? addon.price ?? 0;
+    const p2 = addon.price2Hours ?? addon.pricing?.twoHours ?? addon.price ?? 0;
+    const p3 = addon.price3Hours ?? addon.pricing?.threeHours ?? addon.price ?? 0;
+    setValue('price1Hour', p1);
+    setValue('price2Hours', p2);
+    setValue('price3Hours', p3);
     setValue('category', addon.category);
     setValue('isActive', addon.isActive);
     setIsModalOpen(true);
@@ -105,7 +214,7 @@ export default function AddOnsPage() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     reset();
-    setImageFile(null);
+    setImageFiles([]);
   };
 
   const confirmDelete = (addon) => {
@@ -114,6 +223,11 @@ export default function AddOnsPage() {
   };
 
   const onSubmit = (formData) => {
+    if (!imageFiles || imageFiles.length === 0) {
+      toast.error('Please upload at least 1 image for the special service.');
+      return;
+    }
+
     const data = new FormData();
     Object.keys(formData).forEach(key => {
       if (formData[key] !== undefined && formData[key] !== null) {
@@ -127,9 +241,20 @@ export default function AddOnsPage() {
       }
     });
 
-    if (imageFile instanceof File) {
-      data.append('image', imageFile);
-    }
+    const retainedExisting = [];
+    imageFiles.forEach((item) => {
+      if (item.file instanceof File) {
+        data.append('images', item.file);
+      } else if (item.url) {
+        retainedExisting.push({
+          url: item.url,
+          publicId: item.publicId,
+          alt: item.alt,
+        });
+      }
+    });
+
+    data.append('existingImages', JSON.stringify(retainedExisting));
 
     if (editingAddOn) {
       updateMutation.mutate({ id: editingAddOn._id, data });
@@ -138,21 +263,96 @@ export default function AddOnsPage() {
     }
   };
 
+  const isFiltering = Boolean(debouncedSearch);
+
   const columns = useMemo(() => [
+    {
+      key: 'order',
+      header: 'Order',
+      width: 'w-[80px]',
+      render: (row, rowIndex) => {
+        const foundIndex = orderedItems.findIndex(i => {
+          const rowId = String(row?._id || row?.id || '');
+          const itemId = String(i?._id || i?.id || '');
+          return rowId && itemId && rowId === itemId;
+        });
+        const actualIndex = foundIndex !== -1 ? foundIndex : (typeof rowIndex === 'number' && !isNaN(rowIndex) ? rowIndex : 0);
+        return (
+          <div className="flex items-center gap-1.5 text-slate-400">
+            <div
+              className={`p-1 -ml-1 rounded transition-colors ${
+                isFiltering ? 'cursor-not-allowed opacity-30' : 'cursor-grab active:cursor-grabbing hover:bg-slate-100 hover:text-slate-700'
+              }`}
+              title={isFiltering ? 'Clear search to reorder' : 'Drag to reorder add-on'}
+            >
+              <GripVertical className="h-4 w-4" />
+            </div>
+            {!isFiltering && (
+              <div className="flex flex-col -my-1">
+                <button
+                  type="button"
+                  disabled={actualIndex <= 0 || isReordering}
+                  onClick={() => moveUp(actualIndex)}
+                  className="p-0.5 text-slate-400 hover:text-amber-700 hover:bg-slate-100 rounded disabled:opacity-20 disabled:hover:bg-transparent transition-colors"
+                  title="Move Up"
+                >
+                  <ChevronUp className="h-3 w-3" />
+                </button>
+                <button
+                  type="button"
+                  disabled={actualIndex >= orderedItems.length - 1 || isReordering}
+                  onClick={() => moveDown(actualIndex)}
+                  className="p-0.5 text-slate-400 hover:text-amber-700 hover:bg-slate-100 rounded disabled:opacity-20 disabled:hover:bg-transparent transition-colors"
+                  title="Move Down"
+                >
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+            <span className="w-4 text-center font-bold text-xs text-slate-500">
+              {actualIndex + 1}
+            </span>
+          </div>
+        );
+      }
+    },
     { 
       key: 'image', 
       header: 'Image', 
-      render: (row) => (
-        <div className="h-10 w-10 rounded overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
-          {(row.image?.url || typeof row.image === 'string') ? (
-            <img src={getImageUrl(row.image)} alt={row.name} onError={handleImageError} className="h-full w-full object-contain p-0.5" />
-          ) : (
-            <span className="text-[10px] text-slate-400">No Img</span>
-          )}
-        </div>
-      )
+      render: (row) => {
+        const rowImages = Array.isArray(row.images) && row.images.length > 0 ? row.images : (row.image ? [row.image] : []);
+        return (
+          <div className="flex items-center gap-1">
+            {rowImages.length > 0 ? (
+              rowImages.map((img, i) => (
+                <div key={i} className="h-10 w-10 rounded overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
+                  <img src={getImageUrl(img.url || img)} alt={row.name} onError={handleImageError} className="h-full w-full object-cover" />
+                </div>
+              ))
+            ) : (
+              <div className="h-10 w-10 rounded overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
+                <span className="text-[10px] text-slate-400">No Img</span>
+              </div>
+            )}
+          </div>
+        );
+      }
     },
     { key: 'name', header: 'Add-on Name', sortable: true },
+    {
+      key: 'pricing',
+      header: 'Prices (1H / 2H / 3H)',
+      render: (row) => {
+        const p1 = row.price1Hour ?? row.pricing?.oneHour ?? row.price ?? 0;
+        const p2 = row.price2Hours ?? row.pricing?.twoHours ?? row.price ?? 0;
+        const p3 = row.price3Hours ?? row.pricing?.threeHours ?? row.price ?? 0;
+        return (
+          <span className="text-xs font-semibold text-slate-700">
+            ₹{p1} / ₹{p2} / ₹{p3}
+          </span>
+        );
+      }
+    },
     { key: 'isActive', header: 'Published', render: (row) => <StatusBadge status={row.isActive} type="boolean" /> },
     {
       key: 'actions',
@@ -196,10 +396,18 @@ export default function AddOnsPage() {
       <div className="flex-1">
         <DataTable
           columns={columns}
-          data={data?.data?.addons || data?.data || []}
+          data={orderedItems}
           isLoading={isLoading}
           error={error}
           onRetry={refetch}
+          isRowDraggable={!isFiltering}
+          onRowDragStart={handleDragStart}
+          onRowDragOver={handleDragOver}
+          onRowDragLeave={handleDragLeave}
+          onRowDrop={handleDrop}
+          onRowDragEnd={handleDragEnd}
+          draggedIndex={draggedIndex}
+          dragOverIndex={dragOverIndex}
           pagination={{
             currentPage: data?.pagination?.page || 1,
             totalPages: data?.pagination?.pages || 1
@@ -223,11 +431,12 @@ export default function AddOnsPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Image</label>
-            <ImageUploader 
-              value={imageFile} 
-              onChange={setImageFile} 
-              aspectRatio="video"
+            <MultiImageUploader 
+              images={imageFiles} 
+              onChange={setImageFiles} 
+              maxImages={3}
+              maxSizeMB={5}
+              label="Images"
             />
           </div>
 
@@ -242,14 +451,42 @@ export default function AddOnsPage() {
             {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Price (₹)</label>
-            <input
-              type="number"
-              {...register('price', { valueAsNumber: true })}
-              className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.price ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
-            />
-            {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">1 Hour Price (₹)</label>
+              <input
+                type="number"
+                min="0"
+                {...register('price1Hour', { valueAsNumber: true })}
+                className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.price1Hour ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                placeholder="0"
+              />
+              {errors.price1Hour && <p className="mt-1 text-xs text-red-600">{errors.price1Hour.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">2 Hours Price (₹)</label>
+              <input
+                type="number"
+                min="0"
+                {...register('price2Hours', { valueAsNumber: true })}
+                className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.price2Hours ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                placeholder="0"
+              />
+              {errors.price2Hours && <p className="mt-1 text-xs text-red-600">{errors.price2Hours.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">3 Hours Price (₹)</label>
+              <input
+                type="number"
+                min="0"
+                {...register('price3Hours', { valueAsNumber: true })}
+                className={`block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ${errors.price3Hours ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-300 focus:ring-primary-600'} sm:text-sm sm:leading-6 px-3`}
+                placeholder="0"
+              />
+              {errors.price3Hours && <p className="mt-1 text-xs text-red-600">{errors.price3Hours.message}</p>}
+            </div>
           </div>
 
           <div className="flex items-center gap-2 mt-4">

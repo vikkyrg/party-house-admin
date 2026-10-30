@@ -73,11 +73,6 @@ export const queryKeys = {
     all: (filters) => ['gallery', filters],
     detail: (id) => ['gallery', id],
   },
-  contactMessages: {
-    all: (filters) => ['contactMessages', filters],
-    detail: (id) => ['contactMessages', id],
-    unreadCount: ['contactMessages', 'unread-count'],
-  },
 };
 
 

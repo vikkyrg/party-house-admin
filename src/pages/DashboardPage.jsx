@@ -4,7 +4,7 @@ import { useDashboardStats } from '../hooks/useDashboard';
 import LoadingState from '../components/common/LoadingState';
 import ErrorState from '../components/common/ErrorState';
 import { formatCurrency } from '../lib/formatters';
-import { CalendarDays, Film, Map, Users, TrendingUp, Clock, CheckCircle, XCircle, LayoutGrid, Cake, ShoppingBag, Sparkles, Image as ImageIcon, Mail } from 'lucide-react';
+import { CalendarDays, Film, Map, Users, TrendingUp, Clock, CheckCircle, XCircle, LayoutGrid, Cake, ShoppingBag, Sparkles, Image as ImageIcon } from 'lucide-react';
 
 
 export default function DashboardPage() {
@@ -74,14 +74,6 @@ export default function DashboardPage() {
       color: 'text-cyan-600',
       bgColor: 'bg-cyan-100',
       link: '/admin/gallery',
-    },
-    {
-      name: 'Contact Messages',
-      value: stats.unreadContactMessages !== undefined ? `${stats.unreadContactMessages} new` : 0,
-      icon: Mail,
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-100',
-      link: '/admin/contact-messages',
     },
   ];
 

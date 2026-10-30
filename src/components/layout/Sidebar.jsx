@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import { hasPermission } from '../../lib/permissions';
+import { useBookingNotifications } from '../../hooks/useBookingNotifications';
 import {
   LayoutDashboard,
   CalendarDays,
@@ -22,7 +23,7 @@ import {
 
 const navItems = [
   { name: 'Dashboard', path: '/admin', icon: LayoutDashboard, permission: 'view:dashboard' },
-  { name: 'Bookings', path: '/admin/bookings', icon: CalendarDays, permission: 'manage:bookings' },
+  { name: 'Bookings', path: '/admin/bookings', icon: CalendarDays, permission: 'manage:bookings', hasBadge: true },
   { name: 'Rooms', path: '/admin/rooms', icon: Film, permission: 'manage:theaters' },
   { name: 'Event Types', path: '/admin/event-types', icon: Tag, permission: 'manage:eventTypes' },
   { name: 'Cakes', path: '/admin/cakes', icon: Cake, permission: 'manage:addOns' },
@@ -32,24 +33,22 @@ const navItems = [
   { name: 'Blogs', path: '/admin/stories', icon: MessageSquareQuote, permission: 'manage:stories' },
   { name: 'Banners', path: '/admin/banners', icon: ImageIcon, permission: 'manage:banners' },
   { name: 'FAQs', path: '/admin/faqs', icon: HelpCircle, permission: 'manage:faqs' },
-  { name: 'Contact Messages', path: '/admin/contact-messages', icon: Mail, permission: 'manage:contactMessages' },
   { name: 'Users', path: '/admin/users', icon: Users, permission: 'manage:users' },
   { name: 'Audit Logs', path: '/admin/audit-logs', icon: ShieldAlert, permission: 'view:auditLogs' },
   { name: 'Settings', path: '/admin/settings', icon: Settings, permission: 'manage:settings' },
 ];
 
-
-import { useUnreadContactCount } from '../../hooks/useUnreadContactCount';
-
 export default function Sidebar() {
   const location = useLocation();
   const { user, logout } = useAuthStore();
   const { isSidebarCollapsed, toggleSidebar } = useUiStore();
-  const { data: unreadContactCount = 0 } = useUnreadContactCount();
+  const { unreadCount } = useBookingNotifications();
 
   const filteredNavItems = navItems.filter(item => 
     hasPermission(user?.role, item.permission)
   );
+
+  const formattedCount = unreadCount > 99 ? '99+' : unreadCount;
 
   return (
     <aside
@@ -80,9 +79,7 @@ export default function Sidebar() {
           const Icon = item.icon;
           const isActive = location.pathname === item.path || 
                           (item.path !== '/admin' && location.pathname.startsWith(item.path));
-          const isContactItem = item.path === '/admin/contact-messages';
-          const badgeCount = isContactItem ? unreadContactCount : 0;
-          const badgeText = badgeCount > 99 ? '99+' : badgeCount;
+          const showBadge = item.hasBadge && unreadCount > 0;
 
           return (
             <Link
@@ -93,22 +90,22 @@ export default function Sidebar() {
                   ? 'bg-primary-50 text-text-primary font-semibold shadow-sm border border-[var(--color-border-hover)]'
                   : 'text-text-secondary hover:bg-[var(--color-surface-secondary)] hover:text-text-primary'
               } ${isSidebarCollapsed ? 'justify-center' : ''}`}
-              title={isSidebarCollapsed ? `${item.name}${badgeCount > 0 ? ` (${badgeText} unread)` : ''}` : undefined}
+              title={isSidebarCollapsed ? item.name : undefined}
             >
               <div className="relative flex items-center">
                 <Icon className={`h-5 w-5 ${isSidebarCollapsed ? '' : 'mr-3'} ${isActive ? 'text-primary-600' : 'text-text-muted'}`} />
-                {isSidebarCollapsed && badgeCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
-                    {badgeText}
+                {isSidebarCollapsed && showBadge && (
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-red-600 text-[10px] font-extrabold text-white shadow-xs animate-pulse">
+                    {formattedCount}
                   </span>
                 )}
               </div>
               {!isSidebarCollapsed && (
                 <div className="flex flex-1 items-center justify-between min-w-0">
                   <span className="truncate">{item.name}</span>
-                  {badgeCount > 0 && (
-                    <span className="ml-2 inline-flex h-5 min-w-[20px] px-1.5 items-center justify-center rounded-full bg-red-600 text-[11px] font-bold text-white shadow-sm ring-1 ring-white/20 animate-in fade-in">
-                      {badgeText}
+                  {showBadge && (
+                    <span className="ml-2 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-red-600 text-white text-[11px] font-extrabold shadow-xs transition-transform transform active:scale-95 animate-pulse">
+                      {formattedCount}
                     </span>
                   )}
                 </div>
@@ -117,7 +114,6 @@ export default function Sidebar() {
           );
         })}
       </nav>
-
 
       {/* Footer Controls */}
       <div className="p-3 border-t border-[var(--color-border)] space-y-1 shrink-0">

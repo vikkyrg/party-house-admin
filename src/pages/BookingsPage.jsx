@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 
 import PageHeader from '../components/layout/PageHeader';
+import BookingNotificationBanner from '../components/booking/BookingNotificationBanner';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Button from '../components/common/Button';
@@ -438,6 +439,9 @@ export default function BookingsPage() {
 
   return (
     <div className="space-y-6 pb-12">
+      {/* Booking Notification Banner */}
+      <BookingNotificationBanner />
+
       {/* Page Header */}
       <PageHeader
         title="Booking Management"

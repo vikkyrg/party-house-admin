@@ -33,7 +33,6 @@ import NotFoundPage from '../pages/NotFoundPage';
 import ServicesPage from '../pages/ServicesPage';
 import GalleryPage from '../pages/GalleryPage';
 import StoriesPage from '../pages/StoriesPage';
-import ContactMessagesPage from '../pages/ContactMessagesPage';
 
 const ProtectedRoute = ({ children, requiredRole, requiredPermission }) => {
 
@@ -205,14 +204,6 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission="manage:faqs">
             <FAQsPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'contact-messages',
-        element: (
-          <ProtectedRoute requiredPermission="manage:contactMessages">
-            <ContactMessagesPage />
           </ProtectedRoute>
         ),
       },

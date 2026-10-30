@@ -22,6 +22,14 @@ export default function DataTable({
   sortConfig,
   onSort,
   emptyStateProps = {},
+  isRowDraggable = false,
+  onRowDragStart,
+  onRowDragOver,
+  onRowDragLeave,
+  onRowDrop,
+  onRowDragEnd,
+  draggedIndex = null,
+  dragOverIndex = null,
 }) {
   if (isLoading) {
     return (
@@ -97,15 +105,30 @@ export default function DataTable({
           </thead>
           <tbody className="bg-white divide-y divide-slate-200">
             {data.map((row, rowIndex) => (
-              <tr key={row.id || row._id || rowIndex} className="hover:bg-slate-50 transition-colors">
+              <tr 
+                key={row.id || row._id || rowIndex} 
+                draggable={isRowDraggable}
+                onDragStart={isRowDraggable ? (e) => onRowDragStart?.(e, rowIndex) : undefined}
+                onDragOver={isRowDraggable ? (e) => onRowDragOver?.(e, rowIndex) : undefined}
+                onDragLeave={isRowDraggable ? () => onRowDragLeave?.(rowIndex) : undefined}
+                onDrop={isRowDraggable ? (e) => onRowDrop?.(e, rowIndex) : undefined}
+                onDragEnd={isRowDraggable ? onRowDragEnd : undefined}
+                className={`transition-all ${
+                  isRowDraggable && draggedIndex === rowIndex
+                    ? 'opacity-40 bg-amber-50'
+                    : isRowDraggable && dragOverIndex === rowIndex
+                    ? 'bg-amber-100/60 ring-2 ring-inset ring-amber-400'
+                    : 'hover:bg-slate-50'
+                }`}
+              >
                 {columns.map((col, colIndex) => (
                   <td
                     key={`${row.id || rowIndex}-${col.key || colIndex}`}
                     className={`whitespace-nowrap px-6 py-4 align-middle text-sm text-slate-700 ${col.key === 'actions' ? 'actions-column text-right' : ''} ${col.cellClassName || ''}`}
                   >
                     {col.key === 'actions' ? (
-                      <ActionButtons>{col.render ? col.render(row) : row[col.key]}</ActionButtons>
-                    ) : (col.render ? col.render(row) : row[col.key])}
+                      <ActionButtons>{col.render ? col.render(row, rowIndex) : row[col.key]}</ActionButtons>
+                    ) : (col.render ? col.render(row, rowIndex) : row[col.key])}
                   </td>
                 ))}
               </tr>
