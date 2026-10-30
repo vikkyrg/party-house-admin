@@ -31,6 +31,9 @@ const blankRoom = () => ({
   maximumMembers: 10,
   weekdayPrice: 0,
   weekendPrice: 0,
+  screenSize: '',
+  pictureQuality: '',
+  soundQuality: '',
   slots: [{ startTime: '10:00 AM', endTime: '01:00 PM', isActive: true }],
   image: null,
   isActive: true,
@@ -147,7 +150,7 @@ export default function TheatersPage() {
     for (const room of rooms) {
       if (!room.name?.trim()) continue;
       const roomData = new FormData();
-      ['name', 'description', 'couple', 'maximumMembers', 'weekdayPrice', 'weekendPrice', 'isActive'].forEach((field) => roomData.append(field, room[field] ?? ''));
+      ['name', 'description', 'couple', 'maximumMembers', 'weekdayPrice', 'weekendPrice', 'screenSize', 'pictureQuality', 'soundQuality', 'isActive'].forEach((field) => roomData.append(field, room[field] ?? ''));
       roomData.append('slots', JSON.stringify(room.slots || []));
       if (room.image instanceof File) roomData.append('images', room.image);
       if (room._id) {
@@ -378,6 +381,9 @@ export default function TheatersPage() {
                   <label className="text-sm font-medium text-slate-700">Maximum Members *<input type="number" min="1" value={room.maximumMembers} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, maximumMembers: event.target.value } : item))} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /></label>
                   <label className="text-sm font-medium text-slate-700">Weekday Price / 2 Hours *<input type="number" min="0" value={room.weekdayPrice ?? room.price ?? ''} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, weekdayPrice: event.target.value } : item))} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /></label>
                   <label className="text-sm font-medium text-slate-700">Weekend Price / 2 Hours *<input type="number" min="0" value={room.weekendPrice ?? room.price ?? ''} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, weekendPrice: event.target.value } : item))} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /></label>
+                  <label className="text-sm font-medium text-slate-700">Screen Size<input value={room.screenSize || ''} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, screenSize: event.target.value } : item))} placeholder="e.g. 85-inch, 100-inch" className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /></label>
+                  <label className="text-sm font-medium text-slate-700">Picture Quality<input value={room.pictureQuality || ''} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, pictureQuality: event.target.value } : item))} placeholder="e.g. Clear picture with rich colors." className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /></label>
+                  <label className="text-sm font-medium text-slate-700 sm:col-span-2">Sound Quality<input value={room.soundQuality || ''} onChange={(event) => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, soundQuality: event.target.value } : item))} placeholder="e.g. Clear sound with deep bass." className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /></label>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wider text-slate-600">Time Slots</span><Button type="button" variant="outline" size="sm" onClick={() => setRoomDrafts((rooms) => rooms.map((item, index) => index === roomIndex ? { ...item, slots: [...item.slots, { startTime: '', endTime: '', isActive: true }] } : item))}>Add Time Slot</Button></div>
