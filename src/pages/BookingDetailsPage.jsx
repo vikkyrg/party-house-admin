@@ -376,9 +376,24 @@ export default function BookingDetailsPage() {
               {booking.cake && booking.cake.name && (
                 <div className="border border-slate-100 p-3 rounded-lg flex justify-between items-center">
                   <div>
-                    <span className="font-medium text-slate-800 block">Cake: {booking.cake.name}</span>
-                    <span className="text-xs text-slate-500">
-                      Size: {booking.cake.size || booking.cake.sizeLabel || '500g'} {booking.cake.flavor ? `• Flavor: ${booking.cake.flavor}` : ''}
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-slate-800">
+                        {booking.cake.name}{booking.cake.isEggless ? ' (Eggless)' : ''}
+                      </span>
+                      {booking.cake.isEggless ? (
+                        <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          Eggless
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                          Regular
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs text-slate-500 block mt-0.5">
+                      {booking.cake.size || booking.cake.sizeLabel ? (
+                        <>Weight / Size: {booking.cake.sizeLabel || booking.cake.size}</>
+                      ) : 'Weight: Half Kg'} {booking.cake.flavor ? `• Flavor: ${booking.cake.flavor}` : ''}
                     </span>
                   </div>
                   <span className="font-semibold text-slate-800">₹{booking.cake.price || 0}</span>
