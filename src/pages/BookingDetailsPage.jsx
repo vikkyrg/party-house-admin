@@ -166,8 +166,8 @@ export default function BookingDetailsPage() {
   const customer = booking.customerDetails || {};
   const pricing = booking.pricing || {};
   const payment = booking.payment || {};
-  const verifiedPaid = payment.amountPaid > 0 ? payment.amountPaid : (payment.status === 'paid' ? (pricing.advanceAmount || 750) : 0);
-  const remainingDue = Math.max(0, (pricing.total || 0) - verifiedPaid);
+  const verifiedPaid = payment.amountPaid > 0 ? payment.amountPaid : (payment.status === 'paid' ? (pricing.advanceAmount || pricing.total || 0) : 0);
+  const remainingDue = payment.status === 'paid' && pricing.advanceAmount === pricing.total ? 0 : Math.max(0, (pricing.total || 0) - verifiedPaid);
 
   const isPendingStatus = ['pending', 'pending_payment', 'pending_verification'].includes(booking.status);
 
@@ -454,18 +454,22 @@ export default function BookingDetailsPage() {
                 <span>₹{pricing.total || 0}</span>
               </div>
 
-              <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 mt-4 space-y-1.5">
+              <div className="bg-amber-50 p-3.5 rounded-lg border border-amber-200 mt-4 space-y-2">
                 <div className="flex justify-between text-xs font-semibold text-amber-900">
-                  <span>Required Advance:</span>
-                  <span>₹{pricing.advanceAmount || 750}</span>
+                  <span>Total Booking Amount:</span>
+                  <span>₹{pricing.total || 0}</span>
                 </div>
                 <div className="flex justify-between text-xs font-semibold text-emerald-700">
-                  <span>Advance Received:</span>
+                  <span>Amount Paid:</span>
                   <span>₹{verifiedPaid}</span>
                 </div>
-                <div className="flex justify-between text-sm font-bold text-slate-900 pt-1 border-t border-amber-200">
-                  <span>Balance Due at Venue:</span>
-                  <span className="text-amber-800">₹{remainingDue}</span>
+                <div className="flex justify-between text-xs font-semibold text-slate-700">
+                  <span>Payment Status:</span>
+                  <span className="capitalize font-bold">{payment.status || 'pending'}</span>
+                </div>
+                <div className="flex justify-between text-sm font-bold text-slate-900 pt-1.5 border-t border-amber-200">
+                  <span>Remaining Balance:</span>
+                  <span className={remainingDue === 0 ? "text-emerald-700" : "text-amber-800"}>₹{remainingDue}</span>
                 </div>
               </div>
             </div>
@@ -610,7 +614,7 @@ export default function BookingDetailsPage() {
               <CheckCircle className="w-5 h-5 text-emerald-600" /> Verify Payment & Confirm Booking
             </h3>
             <p className="text-sm text-slate-600">
-              Confirm booking <b>#{booking.bookingId}</b> after checking the merchant bank account for ₹{pricing.advanceAmount || 750}.
+              Confirm booking <b>#{booking.bookingId}</b> after checking the merchant bank account for ₹{pricing.advanceAmount || pricing.total || 750}.
             </p>
 
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 space-y-2">
@@ -624,7 +628,7 @@ export default function BookingDetailsPage() {
                   onChange={(e) => setMarkPaymentPaid(e.target.checked)}
                   className="rounded border-slate-300 text-amber-600 focus:ring-amber-500 mt-0.5"
                 />
-                <span>I have checked the merchant UPI/bank account and confirmed credit of ₹{pricing.advanceAmount || 750}.</span>
+                <span>I have checked the merchant UPI/bank account and confirmed credit of ₹{pricing.advanceAmount || pricing.total || 750}.</span>
               </label>
             </div>
 

@@ -170,8 +170,8 @@ export default function BookingsPage() {
     if (booking.payment?.status !== 'paid') {
       setConfirmModal({
         isOpen: true,
-        title: 'Verify Advance & Confirm Booking',
-        message: `Booking ${booking.bookingId} currently has payment status '${booking.payment?.status || 'pending'}'. Do you verify that advance payment of ₹${booking.pricing?.advanceAmount || 750} was received (via UPI / Cash / Online) and confirm this reservation?`,
+        title: 'Verify Payment & Confirm Booking',
+        message: `Booking ${booking.bookingId} currently has payment status '${booking.payment?.status || 'pending'}'. Do you verify that payment of ₹${booking.pricing?.advanceAmount || booking.pricing?.total || 750} was received (via UPI / Cash / Online) and confirm this reservation?`,
         action: () =>
           updateStatusMutation.mutate({
             id: booking._id,
@@ -344,16 +344,16 @@ export default function BookingsPage() {
         key: 'financials',
         render: (row) => {
           const total = row.pricing?.total || 0;
-          const advance =
+          const paid =
             row.payment?.status === 'paid'
-              ? row.payment.amountPaid || row.pricing?.advanceAmount || 750
+              ? row.payment.amountPaid || row.pricing?.advanceAmount || total
               : 0;
-          const balance = total > advance ? total - advance : 0;
+          const balance = total > paid ? total - paid : 0;
           return (
             <div className="text-xs min-w-[110px]">
               <p className="font-bold text-slate-900">Total: ₹{total}</p>
               <p className="text-[11px] text-emerald-700 font-semibold">
-                Adv: ₹{advance}
+                Paid: ₹{paid}
               </p>
               <p className="text-[11px] text-amber-800">
                 Bal: ₹{balance}
@@ -684,11 +684,11 @@ export default function BookingsPage() {
         ) : (
           bookings.map((booking) => {
             const total = booking.pricing?.total || 0;
-            const advance =
+            const paid =
               booking.payment?.status === 'paid'
-                ? booking.payment.amountPaid || booking.pricing?.advanceAmount || 750
+                ? booking.payment.amountPaid || booking.pricing?.advanceAmount || total
                 : 0;
-            const balance = total > advance ? total - advance : 0;
+            const balance = total > paid ? total - paid : 0;
 
             return (
               <div
@@ -747,7 +747,7 @@ export default function BookingsPage() {
                   <div>
                     <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Financials</span>
                     <p className="font-bold text-slate-900 text-[11px]">Total: ₹{total}</p>
-                    <p className="text-[10px] text-emerald-700 font-semibold">Adv: ₹{advance} • Bal: ₹{balance}</p>
+                    <p className="text-[10px] text-emerald-700 font-semibold">Paid: ₹{paid} • Bal: ₹{balance}</p>
                   </div>
                 </div>
 
