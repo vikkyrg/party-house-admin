@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   RefreshCw,
   Send,
+  Eye,
 } from 'lucide-react';
 import { bookingService } from '../services/bookingService';
 import { useEffect } from 'react';
@@ -39,6 +40,7 @@ export default function BookingDetailsPage() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [paymentRecordToVerify, setPaymentRecordToVerify] = useState(null);
   const [paymentRecordToReject, setPaymentRecordToReject] = useState(null);
+  const [paymentRecordToView, setPaymentRecordToView] = useState(null);
   const [markPaymentPaid, setMarkPaymentPaid] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -187,6 +189,13 @@ export default function BookingDetailsPage() {
   const paymentRecords = booking.paymentRecords || [];
   const paymentSummary = booking.paymentSummary || {};
   const totalBookingAmount = Number(paymentSummary.totalBookingAmount ?? pricing.total ?? 0);
+  const advanceAmountRequired = Number(
+    paymentSummary.advanceAmountRequired ?? pricing.advanceAmount ?? 0
+  );
+  const totalCustomerSubmittedAmount = Number(
+    paymentSummary.totalCustomerSubmittedAmount ??
+    paymentRecords.reduce((sum, record) => sum + Number(record.paymentAmount || 0), 0)
+  );
   const verifiedPaid = Number(
     paymentSummary.verifiedAmountPaid ??
     (paymentRecords.length
@@ -510,6 +519,14 @@ export default function BookingDetailsPage() {
                   <span>Total Booking Amount:</span>
                   <span>₹{totalBookingAmount.toLocaleString('en-IN')}</span>
                 </div>
+                <div className="flex justify-between text-xs font-semibold text-amber-900">
+                  <span>Advance Amount Required:</span>
+                  <span>₹{advanceAmountRequired.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between text-xs font-semibold text-slate-700">
+                  <span>Total Customer Submitted Amount:</span>
+                  <span>₹{totalCustomerSubmittedAmount.toLocaleString('en-IN')}</span>
+                </div>
                 <div className="flex justify-between text-xs font-semibold text-emerald-700">
                   <span>Amount Paid:</span>
                   <span>₹{verifiedPaid.toLocaleString('en-IN')}</span>
@@ -558,6 +575,13 @@ export default function BookingDetailsPage() {
                           {record.paymentStatus === 'pending_verification' ? 'Pending Verification' : record.paymentStatus}
                         </span>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentRecordToView(record)}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 hover:text-amber-900"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> View Payment Details
+                      </button>
                       <p className="text-slate-500">
                         UPI Reference / UTR: <span className="font-mono font-bold text-[#8c5211] select-all">{record.transactionReference}</span>
                       </p>
@@ -722,6 +746,60 @@ export default function BookingDetailsPage() {
       </div>
 
       {/* Confirmation & Verification Modal */}
+      {paymentRecordToView && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <h3 className="text-lg font-bold text-slate-900">Payment Details</h3>
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate-500">Amount</dt>
+                <dd className="font-bold text-slate-900">₹{Number(paymentRecordToView.paymentAmount || 0).toLocaleString('en-IN')}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate-500">UPI Reference / UTR</dt>
+                <dd className="font-mono font-semibold text-slate-900 break-all">{paymentRecordToView.transactionReference}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate-500">Submitted</dt>
+                <dd className="text-right text-slate-800">
+                  {new Date(paymentRecordToView.submittedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate-500">Status</dt>
+                <dd className="font-semibold capitalize text-slate-900">
+                  {paymentRecordToView.paymentStatus === 'pending_verification'
+                    ? 'Pending Verification'
+                    : paymentRecordToView.paymentStatus}
+                </dd>
+              </div>
+              {paymentRecordToView.verifiedAt && (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-500">Verified</dt>
+                  <dd className="text-right text-slate-800">
+                    {new Date(paymentRecordToView.verifiedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                  </dd>
+                </div>
+              )}
+              {paymentRecordToView.rejectionReason && (
+                <div>
+                  <dt className="text-slate-500">Rejection Reason</dt>
+                  <dd className="text-rose-700">{paymentRecordToView.rejectionReason}</dd>
+                </div>
+              )}
+            </dl>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setPaymentRecordToView(null)}
+                className="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {confirmModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
@@ -731,7 +809,7 @@ export default function BookingDetailsPage() {
             </h3>
             <p className="text-sm text-slate-600">
               {paymentRecordToVerify
-                ? <>Verify ₹{Number(paymentRecordToVerify.paymentAmount).toLocaleString('en-IN')} for booking <b>#{booking.bookingId}</b> after checking the merchant bank account.</>
+                ? <>Verify ₹{Number(paymentRecordToVerify.paymentAmount).toLocaleString('en-IN')} for booking <b>#{booking.bookingId}</b> after checking the merchant bank account. The booking is confirmed only when verified payments meet the required advance.</>
                 : <>Confirm booking <b>#{booking.bookingId}</b> after checking the merchant bank account for ₹{pricing.advanceAmount || pricing.total || 750}.</>}
             </p>
 
