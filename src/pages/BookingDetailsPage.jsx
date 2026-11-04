@@ -528,7 +528,7 @@ export default function BookingDetailsPage() {
                   <span>₹{totalCustomerSubmittedAmount.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between text-xs font-semibold text-emerald-700">
-                  <span>Amount Paid:</span>
+                  <span>Amount Paid (Verified):</span>
                   <span>₹{verifiedPaid.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between text-xs font-semibold text-indigo-700">
@@ -537,7 +537,9 @@ export default function BookingDetailsPage() {
                 </div>
                 <div className="flex justify-between text-xs font-semibold text-slate-700">
                   <span>Payment Status:</span>
-                  <span className="font-bold">{paymentDisplayStatus}</span>
+                  <span className={`rounded px-2 py-0.5 font-bold ${getPaymentStatusBadge(paymentSummary.paymentStatus || payment.status)}`}>
+                    {paymentDisplayStatus}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm font-bold text-slate-900 pt-1.5 border-t border-amber-200">
                   <span>Remaining Balance:</span>
