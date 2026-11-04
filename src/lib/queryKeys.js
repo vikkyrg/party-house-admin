@@ -65,6 +65,9 @@ export const queryKeys = {
     all: (filters) => ['services', filters],
     detail: (id) => ['services', id],
   },
+  settings: {
+    all: () => ['settings'],
+  },
   stories: {
     all: (filters) => ['stories', filters],
     detail: (id) => ['stories', id],

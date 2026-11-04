@@ -37,6 +37,8 @@ export default function BookingDetailsPage() {
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
   const [actionReason, setActionReason] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [paymentRecordToVerify, setPaymentRecordToVerify] = useState(null);
+  const [paymentRecordToReject, setPaymentRecordToReject] = useState(null);
   const [markPaymentPaid, setMarkPaymentPaid] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -61,16 +63,25 @@ export default function BookingDetailsPage() {
   const updateStatusMutation = useMutation({
     mutationFn: (payload) =>
       bookingService.updateStatus(id, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['admin-booking-detail', id]);
-      queryClient.invalidateQueries(['admin-bookings']);
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-booking-detail', id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
       setConfirmModalOpen(false);
       setRejectModalOpen(false);
       setCancelModalOpen(false);
       setCompleteModalOpen(false);
       setActionReason('');
       setRejectionReason('');
-      setSuccessMsg('Booking status updated successfully');
+      setPaymentRecordToVerify(null);
+      setPaymentRecordToReject(null);
+      setMarkPaymentPaid(false);
+      setSuccessMsg(
+        variables.action === 'verifyPayment'
+          ? 'Payment verified and booking balance recalculated.'
+          : variables.action === 'rejectPayment'
+            ? 'Payment rejected; booking balance was not reduced.'
+            : 'Booking status updated successfully'
+      );
       setTimeout(() => setSuccessMsg(''), 4000);
     },
     onError: (err) => {
@@ -115,15 +126,22 @@ export default function BookingDetailsPage() {
   const getPaymentStatusBadge = (status) => {
     switch (status) {
       case 'paid':
+      case 'fully_paid':
         return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
       case 'submitted':
+      case 'pending_verification':
         return 'bg-indigo-50 text-indigo-700 border border-indigo-200';
+      case 'partially_paid':
+      case 'partial':
+        return 'bg-cyan-50 text-cyan-700 border border-cyan-200';
       case 'processing':
         return 'bg-cyan-50 text-cyan-700 border border-cyan-200';
       case 'pending':
+      case 'unpaid':
         return 'bg-amber-50 text-amber-700 border border-amber-200';
       case 'failed':
       case 'rejected':
+      case 'payment_rejected':
         return 'bg-rose-50 text-rose-700 border border-rose-200';
       case 'refunded':
         return 'bg-purple-50 text-purple-700 border border-purple-200';
@@ -166,8 +184,34 @@ export default function BookingDetailsPage() {
   const customer = booking.customerDetails || {};
   const pricing = booking.pricing || {};
   const payment = booking.payment || {};
-  const verifiedPaid = payment.amountPaid > 0 ? payment.amountPaid : (payment.status === 'paid' ? (pricing.advanceAmount || pricing.total || 0) : 0);
-  const remainingDue = payment.status === 'paid' && pricing.advanceAmount === pricing.total ? 0 : Math.max(0, (pricing.total || 0) - verifiedPaid);
+  const paymentRecords = booking.paymentRecords || [];
+  const paymentSummary = booking.paymentSummary || {};
+  const totalBookingAmount = Number(paymentSummary.totalBookingAmount ?? pricing.total ?? 0);
+  const verifiedPaid = Number(
+    paymentSummary.verifiedAmountPaid ??
+    (paymentRecords.length
+      ? paymentRecords
+          .filter((record) => record.paymentStatus === 'verified')
+          .reduce((sum, record) => sum + Number(record.paymentAmount || 0), 0)
+      : ['paid', 'partial', 'partially_paid', 'fully_paid'].includes(payment.status)
+        ? Number(payment.amountPaid || (payment.status === 'paid' ? pricing.advanceAmount || pricing.total || 0 : 0))
+        : 0)
+  );
+  const pendingVerificationAmount = Number(
+    paymentSummary.pendingVerificationAmount ??
+    paymentRecords
+      .filter((record) => record.paymentStatus === 'pending_verification')
+      .reduce((sum, record) => sum + Number(record.paymentAmount || 0), 0)
+  );
+  const remainingDue = Number(paymentSummary.remainingBalance ?? Math.max(0, totalBookingAmount - verifiedPaid));
+  const paymentDisplayStatus = {
+    unpaid: 'Unpaid',
+    pending_verification: 'Pending Verification',
+    partially_paid: 'Partially Paid',
+    fully_paid: 'Fully Paid',
+    payment_rejected: 'Payment Rejected',
+  }[paymentSummary.paymentStatus] || payment.status || 'Unpaid';
+  const pendingPaymentRecords = paymentRecords.filter((record) => record.paymentStatus === 'pending_verification');
 
   const isPendingStatus = ['pending', 'pending_payment', 'pending_verification'].includes(booking.status);
 
@@ -217,16 +261,23 @@ export default function BookingDetailsPage() {
             <FileText className="w-4 h-4 text-amber-700" /> Invoice PDF
           </button>
 
-          {isPendingStatus && (
+          {isPendingStatus && pendingPaymentRecords.length === 0 && (
             <>
               <button
-                onClick={() => setConfirmModalOpen(true)}
+                onClick={() => {
+                  setPaymentRecordToVerify(null);
+                  setMarkPaymentPaid(false);
+                  setConfirmModalOpen(true);
+                }}
                 className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 flex items-center gap-1.5 shadow-sm"
               >
                 <CheckCircle className="w-4 h-4" /> Verify & Confirm
               </button>
               <button
-                onClick={() => setRejectModalOpen(true)}
+                onClick={() => {
+                  setPaymentRecordToReject(null);
+                  setRejectModalOpen(true);
+                }}
                 className="px-3.5 py-2 border border-rose-300 text-rose-700 bg-rose-50 rounded-lg text-sm font-medium hover:bg-rose-100 flex items-center gap-1.5"
               >
                 <XCircle className="w-4 h-4" /> Reject Payment
@@ -457,19 +508,23 @@ export default function BookingDetailsPage() {
               <div className="bg-amber-50 p-3.5 rounded-lg border border-amber-200 mt-4 space-y-2">
                 <div className="flex justify-between text-xs font-semibold text-amber-900">
                   <span>Total Booking Amount:</span>
-                  <span>₹{pricing.total || 0}</span>
+                  <span>₹{totalBookingAmount.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between text-xs font-semibold text-emerald-700">
                   <span>Amount Paid:</span>
-                  <span>₹{verifiedPaid}</span>
+                  <span>₹{verifiedPaid.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between text-xs font-semibold text-indigo-700">
+                  <span>Pending Verification:</span>
+                  <span>₹{pendingVerificationAmount.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between text-xs font-semibold text-slate-700">
                   <span>Payment Status:</span>
-                  <span className="capitalize font-bold">{payment.status || 'pending'}</span>
+                  <span className="font-bold">{paymentDisplayStatus}</span>
                 </div>
                 <div className="flex justify-between text-sm font-bold text-slate-900 pt-1.5 border-t border-amber-200">
                   <span>Remaining Balance:</span>
-                  <span className={remainingDue === 0 ? "text-emerald-700" : "text-amber-800"}>₹{remainingDue}</span>
+                  <span className={remainingDue === 0 ? "text-emerald-700" : "text-amber-800"}>₹{remainingDue.toLocaleString('en-IN')}</span>
                 </div>
               </div>
             </div>
@@ -483,8 +538,8 @@ export default function BookingDetailsPage() {
             <div className="space-y-3 text-xs">
               <div className="flex justify-between">
                 <span className="text-slate-500">Payment Status</span>
-                <span className={`px-2 py-0.5 rounded font-semibold capitalize ${getPaymentStatusBadge(payment.status)}`}>
-                  {payment.status || 'pending'}
+                <span className={`px-2 py-0.5 rounded font-semibold ${getPaymentStatusBadge(paymentSummary.paymentStatus || payment.status)}`}>
+                  {paymentDisplayStatus}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -492,18 +547,78 @@ export default function BookingDetailsPage() {
                 <span className="font-semibold text-slate-800 uppercase">{payment.provider || payment.method || 'UPI QR'}</span>
               </div>
 
-              {/* UPI Transaction ID */}
-              <div className="p-2.5 rounded-lg bg-amber-50/60 border border-amber-200/70 space-y-1">
-                <span className="text-slate-500 block text-[11px]">Customer UPI Reference / UTR:</span>
-                <span className="font-mono text-sm font-bold text-[#8c5211] select-all block">
-                  {payment.upiTransactionId || 'Not submitted yet'}
-                </span>
-                {payment.submittedAt && (
-                  <span className="text-[10px] text-slate-400 block">
-                    Submitted: {new Date(payment.submittedAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+              {paymentRecords.length > 0 ? (
+                <div className="space-y-2">
+                  <h3 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Submitted Payments</h3>
+                  {paymentRecords.map((record) => (
+                    <div key={record._id} className="p-3 rounded-lg bg-amber-50/60 border border-amber-200/70 space-y-2">
+                      <div className="flex justify-between gap-3">
+                        <span className="font-bold text-slate-700">₹{Number(record.paymentAmount || 0).toLocaleString('en-IN')}</span>
+                        <span className={`px-2 py-0.5 rounded font-semibold capitalize ${getPaymentStatusBadge(record.paymentStatus)}`}>
+                          {record.paymentStatus === 'pending_verification' ? 'Pending Verification' : record.paymentStatus}
+                        </span>
+                      </div>
+                      <p className="text-slate-500">
+                        UPI Reference / UTR: <span className="font-mono font-bold text-[#8c5211] select-all">{record.transactionReference}</span>
+                      </p>
+                      <p className="text-[10px] text-slate-500">
+                        Submitted: {new Date(record.submittedAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                      </p>
+                      {record.verifiedAt && (
+                        <p className="text-[10px] text-emerald-700">
+                          Verified: {new Date(record.verifiedAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                          {record.verifiedBy?.name ? ` by ${record.verifiedBy.name}` : ''}
+                        </p>
+                      )}
+                      {record.rejectionReason && (
+                        <p className="text-[10px] text-rose-700">Rejected: {record.rejectionReason}</p>
+                      )}
+                      {record.paymentStatus === 'pending_verification' && (
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaymentRecordToVerify(record);
+                              setConfirmModalOpen(true);
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold hover:bg-emerald-700"
+                          >
+                            Verify Payment
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaymentRecordToReject(record);
+                              setRejectionReason('');
+                              setRejectModalOpen(true);
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-bold hover:bg-rose-100"
+                          >
+                            Reject Payment
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-lg bg-amber-50/60 border border-amber-200/70 space-y-1">
+                  <span className="text-slate-500 block text-[11px]">Customer UPI Reference / UTR:</span>
+                  <span className="font-mono text-sm font-bold text-[#8c5211] select-all block">
+                    {payment.upiTransactionId || 'Not submitted yet'}
                   </span>
-                )}
-              </div>
+                  {payment.submittedAt && (
+                    <span className="text-[10px] text-slate-400 block">
+                      Submitted: {new Date(payment.submittedAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                    </span>
+                  )}
+                  {payment.status === 'submitted' && (
+                    <p className="text-[10px] text-amber-800">
+                      Legacy submission amount: ₹{Number(pricing.advanceAmount || 0).toLocaleString('en-IN')}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {payment.verifiedBy && (
                 <div className="flex justify-between">
@@ -611,15 +726,18 @@ export default function BookingDetailsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
             <h3 className="text-lg font-bold text-slate-900 font-serif flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-emerald-600" /> Verify Payment & Confirm Booking
+              <CheckCircle className="w-5 h-5 text-emerald-600" />
+              {paymentRecordToVerify ? 'Verify Submitted Payment' : 'Verify Payment & Confirm Booking'}
             </h3>
             <p className="text-sm text-slate-600">
-              Confirm booking <b>#{booking.bookingId}</b> after checking the merchant bank account for ₹{pricing.advanceAmount || pricing.total || 750}.
+              {paymentRecordToVerify
+                ? <>Verify ₹{Number(paymentRecordToVerify.paymentAmount).toLocaleString('en-IN')} for booking <b>#{booking.bookingId}</b> after checking the merchant bank account.</>
+                : <>Confirm booking <b>#{booking.bookingId}</b> after checking the merchant bank account for ₹{pricing.advanceAmount || pricing.total || 750}.</>}
             </p>
 
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 space-y-2">
               <p className="font-semibold">
-                Customer UPI Ref: <span className="font-mono text-sm font-bold text-amber-950">{payment.upiTransactionId || 'None submitted'}</span>
+                Customer UPI Ref: <span className="font-mono text-sm font-bold text-amber-950">{paymentRecordToVerify?.transactionReference || payment.upiTransactionId || 'None submitted'}</span>
               </p>
               <label className="flex items-start gap-2 cursor-pointer font-medium mt-2">
                 <input
@@ -628,7 +746,7 @@ export default function BookingDetailsPage() {
                   onChange={(e) => setMarkPaymentPaid(e.target.checked)}
                   className="rounded border-slate-300 text-amber-600 focus:ring-amber-500 mt-0.5"
                 />
-                <span>I have checked the merchant UPI/bank account and confirmed credit of ₹{pricing.advanceAmount || pricing.total || 750}.</span>
+                <span>I have checked the merchant UPI/bank account and confirmed credit of ₹{paymentRecordToVerify ? Number(paymentRecordToVerify.paymentAmount).toLocaleString('en-IN') : (pricing.advanceAmount || pricing.total || 750)}.</span>
               </label>
             </div>
 
@@ -642,24 +760,33 @@ export default function BookingDetailsPage() {
 
             <div className="flex justify-end gap-3 pt-2">
               <button
-                onClick={() => setConfirmModalOpen(false)}
+                onClick={() => {
+                  setConfirmModalOpen(false);
+                  setPaymentRecordToVerify(null);
+                  setMarkPaymentPaid(false);
+                }}
                 className="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50"
               >
                 Cancel
               </button>
               <button
-                disabled={payment.status !== 'paid' && !markPaymentPaid}
-                onClick={() =>
-                  updateStatusMutation.mutate({
-                    action: 'verify',
-                    status: 'confirmed',
-                    notes: actionReason,
-                    paymentStatus: 'paid',
-                  })
-                }
+                disabled={!markPaymentPaid || updateStatusMutation.isPending}
+                onClick={() => updateStatusMutation.mutate(
+                  paymentRecordToVerify
+                    ? {
+                        action: 'verifyPayment',
+                        paymentRecordId: paymentRecordToVerify._id,
+                      }
+                    : {
+                        action: 'verify',
+                        status: 'confirmed',
+                        notes: actionReason,
+                        paymentStatus: 'paid',
+                      }
+                )}
                 className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50"
               >
-                Verify & Confirm
+                {paymentRecordToVerify ? 'Verify Payment' : 'Verify & Confirm'}
               </button>
             </div>
           </div>
@@ -671,10 +798,13 @@ export default function BookingDetailsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
             <h3 className="text-lg font-bold text-slate-900 font-serif flex items-center gap-2">
-              <XCircle className="w-5 h-5 text-rose-600" /> Reject Payment Reference
+              <XCircle className="w-5 h-5 text-rose-600" />
+              {paymentRecordToReject ? 'Reject Submitted Payment' : 'Reject Payment Reference'}
             </h3>
             <p className="text-sm text-slate-600">
-              Rejecting payment will cancel this reservation and release the slot. Please enter a mandatory reason (e.g. "Transaction ID not found in bank statement").
+              {paymentRecordToReject
+                ? <>Reject ₹{Number(paymentRecordToReject.paymentAmount).toLocaleString('en-IN')} (UTR: {paymentRecordToReject.transactionReference}). The payment will not reduce the remaining balance.</>
+                : 'Rejecting this payment will cancel the reservation and release the slot.'} Please enter a mandatory reason.
             </p>
             <textarea
               placeholder="Reason for payment rejection (mandatory)..."
@@ -686,19 +816,28 @@ export default function BookingDetailsPage() {
             />
             <div className="flex justify-end gap-3 pt-2">
               <button
-                onClick={() => setRejectModalOpen(false)}
+                onClick={() => {
+                  setRejectModalOpen(false);
+                  setPaymentRecordToReject(null);
+                }}
                 className="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50"
               >
                 Close
               </button>
               <button
-                disabled={!rejectionReason.trim()}
-                onClick={() =>
-                  updateStatusMutation.mutate({
-                    action: 'reject',
-                    rejectionReason: rejectionReason.trim(),
-                  })
-                }
+                disabled={!rejectionReason.trim() || updateStatusMutation.isPending}
+                onClick={() => updateStatusMutation.mutate(
+                  paymentRecordToReject
+                    ? {
+                        action: 'rejectPayment',
+                        paymentRecordId: paymentRecordToReject._id,
+                        rejectionReason: rejectionReason.trim(),
+                      }
+                    : {
+                        action: 'reject',
+                        rejectionReason: rejectionReason.trim(),
+                      }
+                )}
                 className="px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 disabled:opacity-50"
               >
                 Reject Payment
