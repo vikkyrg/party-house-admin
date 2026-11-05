@@ -297,6 +297,9 @@ export default function BookingsPage() {
             <p className="text-[11px] text-slate-500 font-mono">
               {row.customerDetails?.phone || row.user?.phone || '—'}
             </p>
+            <p className="text-[11px] text-slate-500 truncate">
+              {row.customerDetails?.email || row.user?.email || '—'}
+            </p>
           </div>
         ),
       },
@@ -321,12 +324,14 @@ export default function BookingsPage() {
           <div className="min-w-[140px]">
             <p className="font-medium text-slate-800 text-xs">
               {new Date(row.date).toLocaleDateString('en-IN', {
+                timeZone: 'Asia/Kolkata',
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',
               })}
             </p>
             <p className="text-[11px] text-slate-500 font-semibold truncate">{row.timeSlot}</p>
+            <p className="text-[11px] text-slate-500">{row.duration || '—'} hour{row.duration === 1 ? '' : 's'}</p>
           </div>
         ),
       },
@@ -343,18 +348,20 @@ export default function BookingsPage() {
         header: 'Financials',
         key: 'financials',
         render: (row) => {
-          const total = row.pricing?.total || 0;
-          const paid =
-            row.payment?.status === 'paid'
-              ? row.payment.amountPaid || row.pricing?.advanceAmount || total
-              : 0;
-          const balance = total > paid ? total - paid : 0;
+          const total = Number(row.paymentSummary?.totalBookingAmount ?? row.pricing?.total ?? 0);
+          const paid = Number(row.paymentSummary?.verifiedAmountPaid ?? 0);
+          const balance = Number(row.paymentSummary?.remainingBalance ?? Math.max(0, total - paid));
           return (
             <div className="text-xs min-w-[110px]">
               <p className="font-bold text-slate-900">Total: ₹{total}</p>
               <p className="text-[11px] text-emerald-700 font-semibold">
                 Paid: ₹{paid}
               </p>
+              {Number(row.paymentSummary?.totalCustomerSubmittedAmount || 0) > paid && (
+                <p className="text-[11px] text-indigo-700">
+                  Submitted: ₹{Number(row.paymentSummary.totalCustomerSubmittedAmount)}
+                </p>
+              )}
               <p className="text-[11px] text-amber-800">
                 Bal: ₹{balance}
               </p>
@@ -368,7 +375,7 @@ export default function BookingsPage() {
         width: 'w-[140px]',
         render: (row) => (
           <div className="flex items-center">
-            <StatusBadge status={row.payment?.status || 'pending'} />
+            <StatusBadge status={row.paymentSummary?.paymentStatus || row.payment?.status || 'pending'} />
           </div>
         ),
       },

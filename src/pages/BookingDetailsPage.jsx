@@ -397,6 +397,7 @@ export default function BookingDetailsPage() {
                 <span className="font-semibold text-slate-800 flex items-center gap-1">
                   <Calendar className="w-4 h-4 text-amber-600" />
                   {new Date(booking.date).toLocaleDateString('en-IN', {
+                    timeZone: 'Asia/Kolkata',
                     weekday: 'short',
                     day: 'numeric',
                     month: 'short',
@@ -409,7 +410,7 @@ export default function BookingDetailsPage() {
                 <span className="font-semibold text-slate-800 flex items-center gap-1">
                   <Clock className="w-4 h-4 text-amber-600" />
                   {booking.slot?.startTime || booking.startTime || booking.timeSlot}
-                  <span className="text-xs text-slate-500">({booking.duration || 3} hrs)</span>
+                  <span className="text-xs text-slate-500">({booking.duration || '—'} hrs)</span>
                 </span>
               </div>
             </div>
